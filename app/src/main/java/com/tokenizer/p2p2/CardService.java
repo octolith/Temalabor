@@ -71,19 +71,10 @@ public class CardService extends HostApduService {
         byte[] commandSent;
 
         if(apduHexString.startsWith("00A40400")) {
-            switch(securitySingletonInstance.getLockerCommand()) {
-                case RESERVE:
-                    outgoingJws = Jwts.builder().setSubject("reserve").signWith(key, securitySingletonInstance.getSignatureAlgorithm()).compact();
-                    securitySingletonInstance.setLockerCommand(LockerCommand.NONE);
-                    break;
-                default:
-                    outgoingJws = Jwts.builder().setSubject("done").signWith(key, securitySingletonInstance.getSignatureAlgorithm()).compact();
-                    break;
-            }
-            outgoingJws += SELECT_OK_SW;
-            Toast.makeText(this.getApplicationContext(),
+            /*Toast.makeText(this.getApplicationContext(),
                     "APDU select received: " + apduHexString,
-                    Toast.LENGTH_LONG).show();
+                    Toast.LENGTH_LONG).show();*/
+            commandSent = ConcatArrays(SELECT_OK_SW, HexStringToByteArray("00"));
         }
         else {
             String data = new String(commandApdu);
@@ -106,17 +97,47 @@ public class CardService extends HostApduService {
                 String incomingAudience;
 
                 switch(incomingSubject) {
+                    case "select":
+                        switch(securitySingletonInstance.getLockerCommand()) {
+                            case RESERVE:
+                                outgoingJws = Jwts.builder().setSubject("reserve").signWith(key, securitySingletonInstance.getSignatureAlgorithm()).compact();
+                                securitySingletonInstance.setLockerCommand(LockerCommand.NONE);
+                                Toast.makeText(this.getApplicationContext(),
+                                        "Trying to reserve locker",
+                                        Toast.LENGTH_LONG).show();
+                                break;
+                            default:
+                                outgoingJws = Jwts.builder().setSubject("done").signWith(key, securitySingletonInstance.getSignatureAlgorithm()).compact();
+                                Toast.makeText(this.getApplicationContext(),
+                                        "Done",
+                                        Toast.LENGTH_LONG).show();
+                                break;
+                        }
+
+                        break;
                     case "success":
                         incomingId = incomingJws.getBody().getId();
                         incomingAudience = incomingJws.getBody().getAudience();
                         outgoingJws = Jwts.builder().setSubject("success").signWith(key, securitySingletonInstance.getSignatureAlgorithm()).compact();
+                        Toast.makeText(this.getApplicationContext(),
+                                "Success",
+                                Toast.LENGTH_LONG).show();
                         break;
                     case "acknowledged":
+                        Toast.makeText(this.getApplicationContext(),
+                                "Acknowledged",
+                                Toast.LENGTH_LONG).show();
                     case "done":
                         outgoingJws = Jwts.builder().setSubject("done").signWith(key, securitySingletonInstance.getSignatureAlgorithm()).compact();
+                        Toast.makeText(this.getApplicationContext(),
+                                "Done",
+                                Toast.LENGTH_LONG).show();
                         break;
                     default:
                         outgoingJws = Jwts.builder().setSubject("failed").signWith(key, securitySingletonInstance.getSignatureAlgorithm()).compact();
+                        Toast.makeText(this.getApplicationContext(),
+                                "Failed",
+                                Toast.LENGTH_LONG).show();
                         break;
                 }
 
