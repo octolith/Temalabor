@@ -26,6 +26,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void onCloseButtonClick(View view) {
         Intent intent = new Intent(this, CloseActivity.class);
+        startActivity(intent);
     }
 
     public void onReleaseButtonClick(View view) {
