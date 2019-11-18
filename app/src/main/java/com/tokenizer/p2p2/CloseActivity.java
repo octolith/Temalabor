@@ -10,5 +10,7 @@ public class CloseActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_close);
+        LockerProcessSingleton securitySingletonInstance = LockerProcessSingleton.getInstance();
+        securitySingletonInstance.setProcessState(ProcessState.STARTINGCLOSE);
     }
 }

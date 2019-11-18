@@ -97,6 +97,9 @@ public class CardService extends HostApduService {
                 switch (lockerProcessInstance.getProcessState()) {
                     case NONE:
                         outgoingJws = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                        Toast.makeText(this.getApplicationContext(),
+                                "Failure",
+                                Toast.LENGTH_LONG).show();
                         break;
                     case STARTINGRESERVE:
                         switch (incomingSubject) {
@@ -122,6 +125,9 @@ public class CardService extends HostApduService {
                                         .setId(incomingId)
                                         .setAudience(incomingAudience)
                                         .signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                Toast.makeText(this.getApplicationContext(),
+                                        "Reserved locker",
+                                        Toast.LENGTH_LONG).show();
                                 break;
                             default:
                                 outgoingJws = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
@@ -174,6 +180,9 @@ public class CardService extends HostApduService {
                             case "success":
                                 outgoingJws = Jwts.builder().setSubject("acknowledged").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
                                 lockerProcessInstance.setProcessState(ProcessState.SAVING);
+                                Toast.makeText(this.getApplicationContext(),
+                                        "Opened locker",
+                                        Toast.LENGTH_LONG).show();
                                 break;
                             default:
                                 outgoingJws = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
@@ -202,6 +211,9 @@ public class CardService extends HostApduService {
                             case "success":
                                 outgoingJws = Jwts.builder().setSubject("acknowledged").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
                                 lockerProcessInstance.setProcessState(ProcessState.SAVING);
+                                Toast.makeText(this.getApplicationContext(),
+                                        "Closed locker",
+                                        Toast.LENGTH_LONG).show();
                                 break;
                             default:
                                 outgoingJws = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
@@ -231,6 +243,9 @@ public class CardService extends HostApduService {
                                 outgoingJws = Jwts.builder().setSubject("acknowledged").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
                                 lockerProcessInstance.releaseLocker();
                                 lockerProcessInstance.setProcessState(ProcessState.SAVING);
+                                Toast.makeText(this.getApplicationContext(),
+                                        "Released locker",
+                                        Toast.LENGTH_LONG).show();
                                 break;
                             default:
                                 outgoingJws = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
@@ -241,13 +256,16 @@ public class CardService extends HostApduService {
                     default:
                         outgoingJws = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
                         lockerProcessInstance.setProcessState(ProcessState.NONE);
+                        Toast.makeText(this.getApplicationContext(),
+                                "Error: inconsistent state",
+                                Toast.LENGTH_LONG).show();
                         break;
                 }
             } catch (JwtException ex) {     // (4)
                 outgoingJws = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
                 lockerProcessInstance.setProcessState(ProcessState.NONE);
                 Toast.makeText(this.getApplicationContext(),
-                        "JWTS: HIBA",
+                        "JWTS: EXCEPTION",
                         Toast.LENGTH_LONG).show();
                 // we *cannot* use the JWT as intended by its creator
             }
