@@ -115,7 +115,7 @@ public class CardService extends HostApduService {
                             case "success":
                                 incomingId = incomingJws.getBody().getId();
                                 incomingAudience = incomingJws.getBody().getAudience();
-                                lockerProcessInstance.setProcessState(ProcessState.SAVINGRESERVATION);
+                                lockerProcessInstance.setProcessState(ProcessState.SAVING);
                                 lockerProcessInstance.reserveLocker(incomingId, incomingAudience);
                                 outgoingJws = Jwts.builder()
                                         .setSubject("success")
@@ -129,7 +129,7 @@ public class CardService extends HostApduService {
                                 break;
                         }
                         break;
-                    case SAVINGRESERVATION:
+                    case SAVING:
                         switch (incomingSubject) {
                             case "done":
                                 outgoingJws = Jwts.builder().setSubject("done").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
@@ -173,7 +173,7 @@ public class CardService extends HostApduService {
                         switch (incomingSubject) {
                             case "success":
                                 outgoingJws = Jwts.builder().setSubject("acknowledged").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
-                                lockerProcessInstance.setProcessState(ProcessState.SAVINGOPENSTATE);
+                                lockerProcessInstance.setProcessState(ProcessState.SAVING);
                                 break;
                             default:
                                 outgoingJws = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
@@ -181,76 +181,71 @@ public class CardService extends HostApduService {
                                 break;
                         }
                         break;
-                    case SAVINGOPENSTATE:
-                        switch (incomingSubject) {
-                            case "done":
-                                outgoingJws = Jwts.builder().setSubject("done").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
-                                lockerProcessInstance.setProcessState(ProcessState.DONE);
-                                break;
-                            default:
-                                outgoingJws = Jwts.builder().setSubject("done").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
-                                lockerProcessInstance.setProcessState(ProcessState.NONE);
-                                break;
-                        }
-                        break;
                     case STARTINGCLOSE:
                         switch (incomingSubject) {
-                            case "done":
+                            case "select":
+                                outgoingJws = Jwts.builder()
+                                        .setSubject("close")
+                                        .setId(lockerProcessInstance.getReservedLocker().getId())
+                                        .setAudience(lockerProcessInstance.getReservedLocker().getNumber())
+                                        .signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                lockerProcessInstance.setProcessState(ProcessState.CLOSING);
                                 break;
                             default:
+                                outgoingJws = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                lockerProcessInstance.setProcessState(ProcessState.NONE);
                                 break;
                         }
                         break;
                     case CLOSING:
                         switch (incomingSubject) {
-                            case "done":
+                            case "success":
+                                outgoingJws = Jwts.builder().setSubject("acknowledged").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                lockerProcessInstance.setProcessState(ProcessState.SAVING);
                                 break;
                             default:
-                                break;
-                        }
-                        break;
-                    case SAVINGCLOSEDSTATE:
-                        switch (incomingSubject) {
-                            case "done":
-                                break;
-                            default:
+                                outgoingJws = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                lockerProcessInstance.setProcessState(ProcessState.NONE);
                                 break;
                         }
                         break;
                     case STARTINGRELEASE:
                         switch (incomingSubject) {
-                            case "done":
+                            case "select":
+                                outgoingJws = Jwts.builder()
+                                        .setSubject("release")
+                                        .setId(lockerProcessInstance.getReservedLocker().getId())
+                                        .setAudience(lockerProcessInstance.getReservedLocker().getNumber())
+                                        .signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                lockerProcessInstance.setProcessState(ProcessState.RELEASING);
                                 break;
                             default:
+                                outgoingJws = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                lockerProcessInstance.setProcessState(ProcessState.NONE);
                                 break;
                         }
                         break;
                     case RELEASING:
                         switch (incomingSubject) {
-                            case "done":
+                            case "success":
+                                outgoingJws = Jwts.builder().setSubject("acknowledged").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                lockerProcessInstance.releaseLocker();
+                                lockerProcessInstance.setProcessState(ProcessState.SAVING);
                                 break;
                             default:
-                                break;
-                        }
-                        break;
-                    case SAVINGRELEASEDSTATE:
-                        switch (incomingSubject) {
-                            case "done":
-                                break;
-                            default:
+                                outgoingJws = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                lockerProcessInstance.setProcessState(ProcessState.NONE);
                                 break;
                         }
                         break;
                     default:
-                        switch (incomingSubject) {
-                            case "done":
-                                break;
-                            default:
-                                break;
-                        }
+                        outgoingJws = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                        lockerProcessInstance.setProcessState(ProcessState.NONE);
                         break;
                 }
             } catch (JwtException ex) {     // (4)
+                outgoingJws = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                lockerProcessInstance.setProcessState(ProcessState.NONE);
                 Toast.makeText(this.getApplicationContext(),
                         "JWTS: HIBA",
                         Toast.LENGTH_LONG).show();
