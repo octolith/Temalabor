@@ -10,7 +10,6 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 
 import java.security.Key;
 
@@ -99,9 +98,9 @@ public class CardService extends HostApduService {
                 switch(incomingSubject) {
                     case "select":
                         switch(securitySingletonInstance.getLockerCommand()) {
-                            case RESERVE:
+                            case STARTINGRESERVE:
                                 outgoingJws = Jwts.builder().setSubject("reserve").signWith(key, securitySingletonInstance.getSignatureAlgorithm()).compact();
-                                securitySingletonInstance.setLockerCommand(LockerCommand.NONE);
+                                securitySingletonInstance.setLockerCommand(ProcessState.NONE);
                                 Toast.makeText(this.getApplicationContext(),
                                         "Trying to reserve locker",
                                         Toast.LENGTH_LONG).show();

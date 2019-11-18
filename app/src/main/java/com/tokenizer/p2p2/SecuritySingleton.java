@@ -26,11 +26,11 @@ public class SecuritySingleton {
         return signatureAlgorithm;
     }
 
-    public LockerCommand getLockerCommand() {
+    public ProcessState getLockerCommand() {
         return lockerCommand;
     }
 
-    public void setLockerCommand(LockerCommand value) {
+    public void setLockerCommand(ProcessState value) {
         lockerCommand = value;
     }
 
@@ -38,12 +38,12 @@ public class SecuritySingleton {
     private Key key;
     private String tokenString;
     private SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.HS256;
-    private LockerCommand lockerCommand;
+    private ProcessState lockerCommand;
 
     private SecuritySingleton() {
         key = new SecretKeySpec(keyString.getBytes(), signatureAlgorithm.getJcaName());
         tokenString = "";
-        lockerCommand = LockerCommand.NONE;
+        lockerCommand = ProcessState.NONE;
     }
 
     public static SecuritySingleton getInstance() {

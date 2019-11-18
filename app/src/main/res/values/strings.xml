@@ -2,4 +2,7 @@
     <string name="app_name">P2P2</string>
     <string name="servicedesc">Tokenizer P2P Service</string>
     <string name="aiddescription">AID</string>
+    <string name="reserveLocker">Reserve Locker</string>
+    <string name="openLocker">Open Locker</string>
+    <string name="closeLocker">Close Locker</string>
 </resources>
