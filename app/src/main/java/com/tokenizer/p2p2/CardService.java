@@ -61,11 +61,11 @@ public class CardService extends HostApduService {
 
         String apduHexString = ByteArrayToHexString(commandApdu);
 
-        SecuritySingleton securitySingletonInstance = SecuritySingleton.getInstance();
+        LockerProcessSingleton lockerProcessInstance = LockerProcessSingleton.getInstance();
 
         String outgoingJws = "";
 
-        Key key = securitySingletonInstance.getKey();
+        Key key = lockerProcessInstance.getKey();
 
         byte[] commandSent;
 
@@ -94,52 +94,162 @@ public class CardService extends HostApduService {
                 String incomingSubject = incomingJws.getBody().getSubject();
                 String incomingId;
                 String incomingAudience;
-
-                switch(incomingSubject) {
-                    case "select":
-                        switch(securitySingletonInstance.getLockerCommand()) {
-                            case STARTINGRESERVE:
-                                outgoingJws = Jwts.builder().setSubject("reserve").signWith(key, securitySingletonInstance.getSignatureAlgorithm()).compact();
-                                securitySingletonInstance.setLockerCommand(ProcessState.NONE);
-                                Toast.makeText(this.getApplicationContext(),
-                                        "Trying to reserve locker",
-                                        Toast.LENGTH_LONG).show();
+                switch (lockerProcessInstance.getProcessState()) {
+                    case NONE:
+                        outgoingJws = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                        break;
+                    case STARTINGRESERVE:
+                        switch (incomingSubject) {
+                            case "select":
+                                outgoingJws = Jwts.builder().setSubject("reserve").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                lockerProcessInstance.setProcessState(ProcessState.RESERVING);
                                 break;
                             default:
-                                outgoingJws = Jwts.builder().setSubject("done").signWith(key, securitySingletonInstance.getSignatureAlgorithm()).compact();
-                                Toast.makeText(this.getApplicationContext(),
-                                        "Done",
-                                        Toast.LENGTH_LONG).show();
+                                outgoingJws = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                lockerProcessInstance.setProcessState(ProcessState.NONE);
                                 break;
                         }
-
                         break;
-                    case "success":
-                        incomingId = incomingJws.getBody().getId();
-                        incomingAudience = incomingJws.getBody().getAudience();
-                        outgoingJws = Jwts.builder().setSubject("success").signWith(key, securitySingletonInstance.getSignatureAlgorithm()).compact();
-                        Toast.makeText(this.getApplicationContext(),
-                                "Success",
-                                Toast.LENGTH_LONG).show();
+                    case RESERVING:
+                        switch (incomingSubject) {
+                            case "success":
+                                incomingId = incomingJws.getBody().getId();
+                                incomingAudience = incomingJws.getBody().getAudience();
+                                lockerProcessInstance.setProcessState(ProcessState.SAVINGRESERVATION);
+                                lockerProcessInstance.reserveLocker(incomingId, incomingAudience);
+                                outgoingJws = Jwts.builder()
+                                        .setSubject("success")
+                                        .setId(incomingId)
+                                        .setAudience(incomingAudience)
+                                        .signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                break;
+                            default:
+                                outgoingJws = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                lockerProcessInstance.setProcessState(ProcessState.NONE);
+                                break;
+                        }
                         break;
-                    case "acknowledged":
-                        Toast.makeText(this.getApplicationContext(),
-                                "Acknowledged",
-                                Toast.LENGTH_LONG).show();
-                    case "done":
-                        outgoingJws = Jwts.builder().setSubject("done").signWith(key, securitySingletonInstance.getSignatureAlgorithm()).compact();
-                        Toast.makeText(this.getApplicationContext(),
-                                "Done",
-                                Toast.LENGTH_LONG).show();
+                    case SAVINGRESERVATION:
+                        switch (incomingSubject) {
+                            case "done":
+                                outgoingJws = Jwts.builder().setSubject("done").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                lockerProcessInstance.setProcessState(ProcessState.DONE);
+                                break;
+                            default:
+                                outgoingJws = Jwts.builder().setSubject("done").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                lockerProcessInstance.setProcessState(ProcessState.NONE);
+                                break;
+                        }
+                        break;
+                    case DONE:
+                        switch (incomingSubject) {
+                            case "done":
+                                outgoingJws = Jwts.builder().setSubject("done").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                lockerProcessInstance.setProcessState(ProcessState.DONE);
+                                break;
+                            default:
+                                outgoingJws = Jwts.builder().setSubject("done").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                lockerProcessInstance.setProcessState(ProcessState.NONE);
+                                break;
+                        }
+                        break;
+                    case STARTINGOPEN:
+                        switch (incomingSubject) {
+                            case "select":
+                                outgoingJws = Jwts.builder()
+                                        .setSubject("open")
+                                        .setId(lockerProcessInstance.getReservedLocker().getId())
+                                        .setAudience(lockerProcessInstance.getReservedLocker().getNumber())
+                                        .signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                lockerProcessInstance.setProcessState(ProcessState.OPENING);
+                                break;
+                            default:
+                                outgoingJws = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                lockerProcessInstance.setProcessState(ProcessState.NONE);
+                                break;
+                        }
+                        break;
+                    case OPENING:
+                        switch (incomingSubject) {
+                            case "success":
+                                outgoingJws = Jwts.builder().setSubject("acknowledged").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                lockerProcessInstance.setProcessState(ProcessState.SAVINGOPENSTATE);
+                                break;
+                            default:
+                                outgoingJws = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                lockerProcessInstance.setProcessState(ProcessState.NONE);
+                                break;
+                        }
+                        break;
+                    case SAVINGOPENSTATE:
+                        switch (incomingSubject) {
+                            case "done":
+                                outgoingJws = Jwts.builder().setSubject("done").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                lockerProcessInstance.setProcessState(ProcessState.DONE);
+                                break;
+                            default:
+                                outgoingJws = Jwts.builder().setSubject("done").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                lockerProcessInstance.setProcessState(ProcessState.NONE);
+                                break;
+                        }
+                        break;
+                    case STARTINGCLOSE:
+                        switch (incomingSubject) {
+                            case "done":
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    case CLOSING:
+                        switch (incomingSubject) {
+                            case "done":
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    case SAVINGCLOSEDSTATE:
+                        switch (incomingSubject) {
+                            case "done":
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    case STARTINGRELEASE:
+                        switch (incomingSubject) {
+                            case "done":
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    case RELEASING:
+                        switch (incomingSubject) {
+                            case "done":
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    case SAVINGRELEASEDSTATE:
+                        switch (incomingSubject) {
+                            case "done":
+                                break;
+                            default:
+                                break;
+                        }
                         break;
                     default:
-                        outgoingJws = Jwts.builder().setSubject("failed").signWith(key, securitySingletonInstance.getSignatureAlgorithm()).compact();
-                        Toast.makeText(this.getApplicationContext(),
-                                "Failed",
-                                Toast.LENGTH_LONG).show();
+                        switch (incomingSubject) {
+                            case "done":
+                                break;
+                            default:
+                                break;
+                        }
                         break;
                 }
-
             } catch (JwtException ex) {     // (4)
                 Toast.makeText(this.getApplicationContext(),
                         "JWTS: HIBA",
@@ -147,7 +257,7 @@ public class CardService extends HostApduService {
                 // we *cannot* use the JWT as intended by its creator
             }
 
-            securitySingletonInstance.setTokenString(outgoingJws);
+            lockerProcessInstance.setTokenString(outgoingJws);
 
             Toast.makeText(this.getApplicationContext(),
                     "JWTS: " + outgoingJws,

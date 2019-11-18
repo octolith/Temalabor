@@ -5,9 +5,9 @@ import javax.crypto.spec.SecretKeySpec;
 
 import io.jsonwebtoken.SignatureAlgorithm;
 
-public class SecuritySingleton {
+public class LockerProcessSingleton {
 
-    private static SecuritySingleton single_instance = null;
+    private static LockerProcessSingleton single_instance = null;
 
     public Key getKey() {
         return key;
@@ -26,33 +26,44 @@ public class SecuritySingleton {
         return signatureAlgorithm;
     }
 
-    public ProcessState getLockerCommand() {
-        return lockerCommand;
+    public ProcessState getProcessState() {
+        return processState;
     }
 
-    public void setLockerCommand(ProcessState value) {
-        lockerCommand = value;
+    public void setProcessState(ProcessState value) {
+        processState = value;
     }
+
+    public Locker getReservedLocker() { return reservedLocker; }
 
     private final String keyString = "9qVxRa4e47CRtPf27Zph4ruDyH6wYq8u8eTkTRGYefLJ64mF";
     private Key key;
     private String tokenString;
     private SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.HS256;
-    private ProcessState lockerCommand;
+    private ProcessState processState;
+    private Locker reservedLocker;
 
-    private SecuritySingleton() {
+    private LockerProcessSingleton() {
         key = new SecretKeySpec(keyString.getBytes(), signatureAlgorithm.getJcaName());
         tokenString = "";
-        lockerCommand = ProcessState.NONE;
+        processState = ProcessState.NONE;
     }
 
-    public static SecuritySingleton getInstance() {
+    public static LockerProcessSingleton getInstance() {
         if (single_instance == null) {
-            single_instance = new SecuritySingleton();
+            single_instance = new LockerProcessSingleton();
         }
 
         return single_instance;
     }
 
+    public void reserveLocker(String id, String number) {
+        reservedLocker = new Locker(id, number);
+    }
 
+    public Locker releaseLocker() {
+        Locker temp = reservedLocker;
+        reservedLocker = null;
+        return temp;
+    }
 }

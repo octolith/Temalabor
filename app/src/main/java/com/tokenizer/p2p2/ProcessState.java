@@ -13,5 +13,6 @@ public enum ProcessState {
     CLOSING,
     SAVINGCLOSEDSTATE,
     STARTINGRELEASE,
-
+    RELEASING,
+    SAVINGRELEASEDSTATE
 }
