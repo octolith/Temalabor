@@ -77,9 +77,9 @@ public class CardService extends HostApduService {
         }
         else {
             String data = new String(commandApdu);
-            Toast.makeText(this.getApplicationContext(),
+            /*Toast.makeText(this.getApplicationContext(),
                     "Received: " + data,
-                    Toast.LENGTH_LONG).show();
+                    Toast.LENGTH_LONG).show();*/
             data = data.substring(0, data.length()-1);
 
             Jws<Claims> incomingJws;
@@ -106,6 +106,9 @@ public class CardService extends HostApduService {
                             case "select":
                                 outgoingJws = Jwts.builder().setSubject("reserve").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
                                 lockerProcessInstance.setProcessState(ProcessState.RESERVING);
+                                Toast.makeText(this.getApplicationContext(),
+                                        "Reserving locker",
+                                        Toast.LENGTH_LONG).show();
                                 break;
                             default:
                                 outgoingJws = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
@@ -126,7 +129,7 @@ public class CardService extends HostApduService {
                                         .setAudience(incomingAudience)
                                         .signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
                                 Toast.makeText(this.getApplicationContext(),
-                                        "Reserved locker",
+                                        "Reserved locker " + incomingAudience,
                                         Toast.LENGTH_LONG).show();
                                 break;
                             default:
@@ -164,10 +167,13 @@ public class CardService extends HostApduService {
                             case "select":
                                 outgoingJws = Jwts.builder()
                                         .setSubject("open")
-                                        .setId(lockerProcessInstance.getReservedLocker().getId())
+                                        .setId(lockerProcessInstance.getReservedLocker().getTokenString())
                                         .setAudience(lockerProcessInstance.getReservedLocker().getNumber())
                                         .signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
                                 lockerProcessInstance.setProcessState(ProcessState.OPENING);
+                                Toast.makeText(this.getApplicationContext(),
+                                        "Opening locker " + lockerProcessInstance.getReservedLocker().getTokenString(),
+                                        Toast.LENGTH_LONG).show();
                                 break;
                             default:
                                 outgoingJws = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
@@ -195,10 +201,13 @@ public class CardService extends HostApduService {
                             case "select":
                                 outgoingJws = Jwts.builder()
                                         .setSubject("close")
-                                        .setId(lockerProcessInstance.getReservedLocker().getId())
+                                        .setId(lockerProcessInstance.getReservedLocker().getTokenString())
                                         .setAudience(lockerProcessInstance.getReservedLocker().getNumber())
                                         .signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
                                 lockerProcessInstance.setProcessState(ProcessState.CLOSING);
+                                Toast.makeText(this.getApplicationContext(),
+                                        "Closing locker " + lockerProcessInstance.getReservedLocker().getTokenString(),
+                                        Toast.LENGTH_LONG).show();
                                 break;
                             default:
                                 outgoingJws = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
@@ -226,7 +235,7 @@ public class CardService extends HostApduService {
                             case "select":
                                 outgoingJws = Jwts.builder()
                                         .setSubject("release")
-                                        .setId(lockerProcessInstance.getReservedLocker().getId())
+                                        .setId(lockerProcessInstance.getReservedLocker().getTokenString())
                                         .setAudience(lockerProcessInstance.getReservedLocker().getNumber())
                                         .signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
                                 lockerProcessInstance.setProcessState(ProcessState.RELEASING);
@@ -272,9 +281,9 @@ public class CardService extends HostApduService {
 
             lockerProcessInstance.setTokenString(outgoingJws);
 
-            Toast.makeText(this.getApplicationContext(),
+            /*Toast.makeText(this.getApplicationContext(),
                     "JWTS: " + outgoingJws,
-                    Toast.LENGTH_LONG).show();
+                    Toast.LENGTH_LONG).show();*/
         }
 
         commandSent = ConcatArrays(outgoingJws.getBytes(), HexStringToByteArray("00"));
