@@ -12,7 +12,9 @@ public class OpenActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_open);
         Intent i = getIntent();
-        Locker locker = (Locker) i.getParcelableExtra("locker");
+        if(i.hasExtra("locker")) {
+            Locker locker = (Locker) i.getParcelableExtra("locker");
+        }
         LockerProcessSingleton securitySingletonInstance = LockerProcessSingleton.getInstance();
         securitySingletonInstance.setProcessState(ProcessState.STARTINGOPEN);
     }

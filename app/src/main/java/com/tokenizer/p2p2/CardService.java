@@ -4,6 +4,7 @@ import android.nfc.cardemulation.HostApduService;
 import android.os.Bundle;
 import android.widget.Toast;
 
+import java.security.PublicKey;
 import java.util.Arrays;
 
 import io.jsonwebtoken.Claims;
@@ -25,6 +26,8 @@ public class CardService extends HostApduService {
     // "UNKNOWN" status word sent in response to invalid APDU command (0x0000)
     private static final byte[] UNKNOWN_CMD_SW = HexStringToByteArray("0000");
     private static final byte[] SELECT_APDU = BuildSelectApdu(SAMPLE_LOYALTY_CARD_AID);
+
+    private RSACipher rsaCipher;
 
     /**
      * Called if the connection to the NFC card is lost, in order to let the application know the
@@ -58,6 +61,13 @@ public class CardService extends HostApduService {
     // BEGIN_INCLUDE(processCommandApdu)
     @Override
     public byte[] processCommandApdu(byte[] commandApdu, Bundle extras) {
+
+        if (rsaCipher == null) {
+            try {
+                rsaCipher = new RSACipher();
+            }
+            catch(Exception e) {}
+        }
 
         String apduHexString = ByteArrayToHexString(commandApdu);
 
@@ -94,15 +104,39 @@ public class CardService extends HostApduService {
                 String incomingSubject = incomingJws.getBody().getSubject();
                 String incomingId;
                 String incomingAudience;
+                String incomingPublicKey;
+                String incomingTest;
                 switch (lockerProcessInstance.getProcessState()) {
                     case NONE:
                         outgoingJws = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
                         Toast.makeText(this.getApplicationContext(),
                                 "Failure",
-                                Toast.LENGTH_LONG).show();
+                                Toast.LENGTH_SHORT).show();
                         break;
                     case STARTINGRESERVE:
                         switch (incomingSubject) {
+                            case "challenge":
+                                incomingPublicKey = incomingJws.getBody().getIssuer();
+                                try {
+                                    lockerProcessInstance.setServerPublicKey(RSACipher.stringToPublicKey(incomingPublicKey));
+                                    lockerProcessInstance.setServerPublicKeyString(incomingPublicKey);
+                                }
+                                catch(Exception e)
+                                {
+                                    Toast.makeText(this.getApplicationContext(),
+                                            "Public key conversion failure",
+                                            Toast.LENGTH_SHORT).show();
+                                }
+                                outgoingJws = Jwts.builder().setSubject("no").setIssuer(lockerProcessInstance.getClientPublicKeyString()).signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                lockerProcessInstance.setProcessState(ProcessState.CHALLENGERESERVE);
+                            default:
+                                outgoingJws = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                lockerProcessInstance.setProcessState(ProcessState.NONE);
+                                break;
+                        }
+                        break;
+                    case CHALLENGERESERVE:
+                        switch(incomingSubject) {
                             case "select":
                                 outgoingJws = Jwts.builder().setSubject("reserve").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
                                 lockerProcessInstance.setProcessState(ProcessState.RESERVING);
@@ -115,11 +149,19 @@ public class CardService extends HostApduService {
                                 lockerProcessInstance.setProcessState(ProcessState.NONE);
                                 break;
                         }
-                        break;
                     case RESERVING:
                         switch (incomingSubject) {
                             case "success":
                                 incomingId = incomingJws.getBody().getId();
+                                String decoded;
+                                try {
+                                    decoded = rsaCipher.decrypt(incomingId);
+                                }
+                                catch(Exception e) {
+                                    Toast.makeText(this.getApplicationContext(),
+                                            "Decode error",
+                                            Toast.LENGTH_SHORT).show();
+                                }
                                 incomingAudience = incomingJws.getBody().getAudience();
                                 lockerProcessInstance.setProcessState(ProcessState.SAVING);
                                 lockerProcessInstance.reserveLocker(incomingId, incomingAudience);
@@ -163,6 +205,62 @@ public class CardService extends HostApduService {
                         }
                         break;
                     case STARTINGOPEN:
+                        switch (incomingSubject) {
+                            case "challenge":
+                                outgoingJws = Jwts.builder()
+                                        .setSubject("yes")
+                                        .setAudience(lockerProcessInstance.getReservedLocker().getNumber())
+                                        .signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                lockerProcessInstance.setProcessState(ProcessState.CHALLENGEOPEN);
+                                Toast.makeText(this.getApplicationContext(),
+                                        "Opening locker " + lockerProcessInstance.getReservedLocker().getTokenString(),
+                                        Toast.LENGTH_LONG).show();
+                                break;
+                            default:
+                                outgoingJws = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                lockerProcessInstance.setProcessState(ProcessState.NONE);
+                                break;
+                        }
+                        break;
+                    case CHALLENGEOPEN:
+                        switch (incomingSubject) {
+                            case "decode":
+                                incomingTest = incomingJws.getBody().getIssuer();
+
+                                String decoded = "";
+                                try {
+                                    decoded = rsaCipher.decrypt(incomingTest);
+                                }
+                                catch(Exception e) {
+                                    Toast.makeText(this.getApplicationContext(),
+                                            "Decode error",
+                                            Toast.LENGTH_SHORT).show();
+                                }
+                                String encoded = "";
+                                try {
+                                    encoded = rsaCipher.encrypt(decoded, lockerProcessInstance.getServerPublicKey());
+                                }
+                                catch(Exception e) {
+                                    Toast.makeText(this.getApplicationContext(),
+                                            "Encode error",
+                                            Toast.LENGTH_SHORT).show();
+                                }
+                                outgoingJws = Jwts.builder()
+                                        .setSubject("response")
+                                        .setIssuer(encoded)
+                                        .signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                lockerProcessInstance.setProcessState(ProcessState.CHALLENGEOPENSUCCESS);
+                                Toast.makeText(this.getApplicationContext(),
+                                        "Crypto response sent",
+                                        Toast.LENGTH_LONG).show();
+                                break;
+                            default:
+                                outgoingJws = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                lockerProcessInstance.setProcessState(ProcessState.NONE);
+                                break;
+                        }
+                        break;
+                    case CHALLENGEOPENSUCCESS:
                         switch (incomingSubject) {
                             case "select":
                                 outgoingJws = Jwts.builder()

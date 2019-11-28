@@ -3,9 +3,12 @@ package com.tokenizer.p2p2;
 public enum ProcessState {
     NONE,
     STARTINGRESERVE,
+    CHALLENGERESERVE,
     RESERVING,
     DONE,
     STARTINGOPEN,
+    CHALLENGEOPEN,
+    CHALLENGEOPENSUCCESS,
     OPENING,
     SAVING,
     STARTINGCLOSE,
