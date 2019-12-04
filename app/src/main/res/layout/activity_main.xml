@@ -4,7 +4,18 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context=".Activities.MainActivity">
+
+    <Button
+        android:id="@+id/lockerListButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="onLockersButtonClick"
+        android:text="@string/lockerList"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <Button
         android:id="@+id/reserveLockerButton"
@@ -56,8 +67,9 @@
         android:layout_marginTop="8dp"
         android:layout_marginEnd="32dp"
         android:onClick="onReleaseButtonClick"
-        android:text="releaseLocker"
+        android:text="@string/releaseLocker"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/closeLockerButton" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,4 +1,4 @@
-package com.tokenizer.p2p2;
+package com.tokenizer.p2p2.Domain;
 
 import android.nfc.cardemulation.HostApduService;
 import android.os.Bundle;

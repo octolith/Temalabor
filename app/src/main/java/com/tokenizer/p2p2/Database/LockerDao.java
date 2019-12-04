@@ -1,9 +1,12 @@
-package com.tokenizer.p2p2;
+package com.tokenizer.p2p2.Database;
 
+import androidx.lifecycle.LiveData;
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
 import androidx.room.Query;
+
+import com.tokenizer.p2p2.Model.Locker;
 
 import java.util.List;
 
@@ -11,10 +14,10 @@ import java.util.List;
 public interface LockerDao {
 
     @Query("SELECT * FROM locker")
-    List<Locker> loadAll();
+    LiveData<List<Locker>> loadAll();
 
     @Query("SELECT * FROM locker WHERE id IN (:lockerIds)")
-    List<Locker> loadAllByLockerId(int... lockerIds);
+    LiveData<List<Locker>> loadAllByLockerId(int... lockerIds);
 
     @Insert
     void insertAll(Locker... locker);

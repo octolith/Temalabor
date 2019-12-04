@@ -5,4 +5,6 @@
     <string name="reserveLocker">Reserve Locker</string>
     <string name="openLocker">Open Locker</string>
     <string name="closeLocker">Close Locker</string>
+    <string name="lockerList">Lockers</string>
+    <string name="releaseLocker">Release locker</string>
 </resources>

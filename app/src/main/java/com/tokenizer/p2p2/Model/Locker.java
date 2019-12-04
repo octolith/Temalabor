@@ -1,4 +1,4 @@
-package com.tokenizer.p2p2;
+package com.tokenizer.p2p2.Model;
 
 import android.os.Parcel;
 import android.os.Parcelable;

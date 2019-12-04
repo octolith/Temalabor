@@ -1,4 +1,4 @@
-package com.tokenizer.p2p2;
+package com.tokenizer.p2p2.Domain;
 
 public enum ProcessState {
     NONE,

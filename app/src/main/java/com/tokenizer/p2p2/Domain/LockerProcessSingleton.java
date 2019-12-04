@@ -1,4 +1,6 @@
-package com.tokenizer.p2p2;
+package com.tokenizer.p2p2.Domain;
+
+import com.tokenizer.p2p2.Model.Locker;
 
 import java.security.Key;
 import java.security.PrivateKey;
