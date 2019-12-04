@@ -21,4 +21,10 @@ public class ReserveActivity extends AppCompatActivity {
         securitySingletonInstance.setProcessState(ProcessState.STARTINGRESERVE);
         this.lockerDatabase = LockerDatabase.getInstance(this);
     }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        LockerProcessSingleton.getInstance().setProcessState(ProcessState.NONE);
+    }
 }

@@ -14,7 +14,7 @@ import com.tokenizer.p2p2.R;
 
 import java.util.List;
 
-public class LockerListAdapter extends RecyclerView.Adapter<LockerListAdapter.LockerViewHolder> {
+public class LockerAdapter extends RecyclerView.Adapter<LockerAdapter.LockerViewHolder> {
     private List<Locker> lockerList;
     private ItemClickListener itemClickListener;
     private Context context;
@@ -37,19 +37,19 @@ public class LockerListAdapter extends RecyclerView.Adapter<LockerListAdapter.Lo
         }
     }
 
-    public LockerListAdapter(Context context) {
+    public LockerAdapter(Context context) {
         this.context = context;
     }
 
     // Provide a suitable constructor (depends on the kind of dataset)
-    public LockerListAdapter(List<Locker> lockerList) {
+    public LockerAdapter(List<Locker> lockerList) {
         this.lockerList = lockerList;
     }
 
     // Create new views (invoked by the layout manager)
     @NonNull
     @Override
-    public LockerListAdapter.LockerViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public LockerAdapter.LockerViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
 
         // create a new view
         TextView v = (TextView) LayoutInflater.from(context)
@@ -62,7 +62,7 @@ public class LockerListAdapter extends RecyclerView.Adapter<LockerListAdapter.Lo
     // Replace the contents of a view (invoked by the layout manager)
 
     @Override
-    public void onBindViewHolder(@NonNull LockerListAdapter.LockerViewHolder viewHolder, int position) {
+    public void onBindViewHolder(@NonNull LockerAdapter.LockerViewHolder viewHolder, int position) {
         // - get element from your dataset at this position
         // - replace the contents of the view with that element
         viewHolder.textView.setText(lockerList.get(position).getNumber());

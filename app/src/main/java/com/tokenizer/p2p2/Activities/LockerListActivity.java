@@ -13,18 +13,19 @@ import android.widget.Toast;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.tokenizer.p2p2.Database.LockerDatabase;
-import com.tokenizer.p2p2.Domain.LockerListAdapter;
+import com.tokenizer.p2p2.Domain.LockerAdapter;
+import com.tokenizer.p2p2.Domain.LockerProcessSingleton;
+import com.tokenizer.p2p2.Domain.ProcessState;
 import com.tokenizer.p2p2.Model.Locker;
 import com.tokenizer.p2p2.R;
 
 import java.util.List;
 
-public class LockerListActivity extends AppCompatActivity implements LockerListAdapter.ItemClickListener {
+public class LockerListActivity extends AppCompatActivity implements LockerAdapter.ItemClickListener {
 
     private RecyclerView recyclerView;
-    private LockerListAdapter lockerListAdapter;
-    private RecyclerView.LayoutManager layoutManager;
-
+    private LockerAdapter lockerAdapter;
+    private LockerDatabase lockerDatabase;
     private FloatingActionButton floatingActionButton;
 
     @Override
@@ -43,20 +44,23 @@ public class LockerListActivity extends AppCompatActivity implements LockerListA
 
         recyclerView = findViewById(R.id.lockerListRecyclerView);
         // use a linear layout manager
-        layoutManager = new LinearLayoutManager(this);
-        recyclerView.setLayoutManager(layoutManager);
-        // specify an adapter
-        lockerListAdapter = new LockerListAdapter(getApplicationContext());
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        lockerListAdapter.setClickListener(this);
-        recyclerView.setAdapter(lockerListAdapter);
+        // specify an adapter
+        lockerAdapter = new LockerAdapter(getApplicationContext());
+        lockerAdapter.setClickListener(this);
+        recyclerView.setAdapter(lockerAdapter);
+
+        lockerDatabase = LockerDatabase.getInstance(getApplicationContext());
+
+        retrieveLockers();
     }
 
-    private void retrieveLocker() {
-        LockerDatabase.getInstance(this).lockerDao().loadAll().observe(this, new Observer<List<Locker>>() {
+    private void retrieveLockers() {
+        lockerDatabase.lockerDao().loadAll().observe(this, new Observer<List<Locker>>() {
             @Override
             public void onChanged(@Nullable List<Locker> lockers) {
-                lockerListAdapter.setLockerList(lockers);
+                lockerAdapter.setLockerList(lockers);
             }
         });
     }
@@ -64,21 +68,28 @@ public class LockerListActivity extends AppCompatActivity implements LockerListA
     @Override
     public void onItemClick(View view, int position) {
 
-        // debug
-        Toast.makeText(this, "You clicked " + ((LockerListAdapter) lockerListAdapter).getItem(position).getNumber() + " on row number " + position, Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "You clicked "
+                + lockerAdapter.getItem(position).getNumber()
+                + " on row number " + position, Toast.LENGTH_SHORT).show();
 
-        Intent intent = new Intent(this, ReserveActivity.class);
-        intent.putExtra("locker", ((LockerListAdapter) lockerListAdapter).getItem(position));
+        Intent intent = new Intent(this, LockerDetailsActivity.class);
+        intent.putExtra("locker", lockerAdapter.getItem(position));
         startActivity(intent);
     }
 
     public void onReserveButtonClick(View view) {
-        Intent intent = new Intent(this, ReserveActivity.class);
-        startActivity(intent);
+        startActivity(new Intent(this, ReserveActivity.class));
     }
 
     @Override
     protected void onStart() {
         super.onStart();
+        LockerProcessSingleton.getInstance().setProcessState(ProcessState.NONE);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        LockerProcessSingleton.getInstance().setProcessState(ProcessState.NONE);
     }
 }

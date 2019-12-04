@@ -39,7 +39,7 @@ public class LockerProcessSingleton {
         processState = value;
     }
 
-    public Locker getReservedLocker() { return reservedLocker; }
+    public Locker getLocker() { return reservedLocker; }
 
     private final String keyString = "9qVxRa4e47CRtPf27Zph4ruDyH6wYq8u8eTkTRGYefLJ64mF";
     private Key key;
