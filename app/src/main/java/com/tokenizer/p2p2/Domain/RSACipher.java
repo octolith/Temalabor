@@ -1,6 +1,7 @@
 package com.tokenizer.p2p2.Domain;
 
 import android.util.Base64;
+import android.util.Log;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -31,25 +32,36 @@ public class RSACipher {
     byte[] encryptedBytes, decryptedBytes;
     Cipher cipher, cipher1;
     String encrypted, decrypted;
-    LockerProcessSingleton lockerProcessInstance;
+
+    String cipherMode1 = "RSA/ECB/OAEPWithSHA1AndMGF1Padding";
+    String cipherMode2 = "RSA/ECB/PKCS1Padding";
+
+    String cipherMode = cipherMode2;
+
+    static RSACipher instance = null;
 
     private final static String CRYPTO_METHOD = "RSA";
     private final static int CRYPTO_BITS = 1024;
 
-    public RSACipher()
+    public static RSACipher getInstance() {
+        if(instance == null) {
+            try {
+                instance = new RSACipher();
+            }
+            catch(Exception e) {
+                Log.e("RSACipher", "exception", e);
+            }
+        }
+        return instance;
+    }
+
+    private RSACipher()
             throws NoSuchAlgorithmException,
             NoSuchPaddingException,
             InvalidKeyException,
             IllegalBlockSizeException,
             BadPaddingException {
-        lockerProcessInstance = LockerProcessSingleton.getInstance();
-        //generateKeyPair();
-        kpg = KeyPairGenerator.getInstance(CRYPTO_METHOD);
-        kpg.initialize(CRYPTO_BITS);
-        kp = new KeyPair(lockerProcessInstance.getClientPublicKey(), lockerProcessInstance.getClientPrivateKey());
-        publicKey = kp.getPublic();
-        privateKey = kp.getPrivate();
-
+        generateKeyPair();
     }
 
     private void generateKeyPair()
@@ -61,9 +73,12 @@ public class RSACipher {
 
         kpg = KeyPairGenerator.getInstance(CRYPTO_METHOD);
         kpg.initialize(CRYPTO_BITS);
+        //kp = new KeyPair(lockerProcessInstance.getClientPublicKey(), lockerProcessInstance.getClientPrivateKey());
         kp = kpg.genKeyPair();
         publicKey = kp.getPublic();
+        Log.e("PUBLICKEY", getPublicKey("pkcs8-pem"));
         privateKey = kp.getPrivate();
+        Log.e("PRIVATEKEY", getPrivateKey("pkcs1-pem"));
     }
 
     /**
@@ -95,11 +110,11 @@ public class RSACipher {
             rsaPublicKey = (PublicKey) args[1];
         }
 
-        cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA1AndMGF1Padding");
+        cipher = Cipher.getInstance(cipherMode);
         cipher.init(Cipher.ENCRYPT_MODE, rsaPublicKey);
         encryptedBytes = cipher.doFinal(plain.getBytes(StandardCharsets.UTF_8));
 
-        return Base64.encodeToString(encryptedBytes, Base64.DEFAULT);
+        return Base64.encodeToString(encryptedBytes, Base64.NO_WRAP);
     }
 
     public String decrypt(String result)
@@ -109,8 +124,12 @@ public class RSACipher {
             IllegalBlockSizeException,
             BadPaddingException {
 
-        cipher1 = Cipher.getInstance("RSA/ECB/OAEPWithSHA1AndMGF1Padding");
+        Log.w("CIPHERPREPARE", "Preparing cipher");
+
+        cipher1 = Cipher.getInstance(cipherMode);
+        Log.w("CIPHERINIT", "Initializing cipher");
         cipher1.init(Cipher.DECRYPT_MODE, privateKey);
+        Log.w("BASE64", result);
         decryptedBytes = cipher1.doFinal(Base64.decode(result, Base64.DEFAULT));
         decrypted = new String(decryptedBytes);
 
@@ -125,29 +144,48 @@ public class RSACipher {
             BadPaddingException {
 
         switch (option) {
-
             case "pkcs1-pem":
                 String pkcs1pem = "-----BEGIN RSA PUBLIC KEY-----\n";
                 pkcs1pem += Base64.encodeToString(publicKey.getEncoded(), Base64.DEFAULT);
                 pkcs1pem += "-----END RSA PUBLIC KEY-----";
-
                 return pkcs1pem;
-
             case "pkcs8-pem":
                 String pkcs8pem = "-----BEGIN PUBLIC KEY-----\n";
                 pkcs8pem += Base64.encodeToString(publicKey.getEncoded(), Base64.DEFAULT);
                 pkcs8pem += "-----END PUBLIC KEY-----";
 
                 return pkcs8pem;
-
             case "base64":
                 return Base64.encodeToString(publicKey.getEncoded(), Base64.DEFAULT);
-
             default:
                 return null;
-
         }
+    }
 
+    public String getPrivateKey(String option)
+            throws NoSuchAlgorithmException,
+            NoSuchPaddingException,
+            InvalidKeyException,
+            IllegalBlockSizeException,
+            BadPaddingException {
+
+        switch (option) {
+            case "pkcs1-pem":
+                String pkcs1pem = "-----BEGIN RSA PRIVATE KEY-----\n";
+                pkcs1pem += Base64.encodeToString(privateKey.getEncoded(), Base64.DEFAULT);
+                pkcs1pem += "-----END RSA PRIVATE KEY-----";
+                return pkcs1pem;
+            case "pkcs8-pem":
+                String pkcs8pem = "-----BEGIN PUBLIC KEY-----\n";
+                pkcs8pem += Base64.encodeToString(publicKey.getEncoded(), Base64.DEFAULT);
+                pkcs8pem += "-----END PUBLIC KEY-----";
+
+                return pkcs8pem;
+            case "base64":
+                return Base64.encodeToString(publicKey.getEncoded(), Base64.DEFAULT);
+            default:
+                return null;
+        }
     }
 
     public static PublicKey stringToPublicKey(String publicKeyString)

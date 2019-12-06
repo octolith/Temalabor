@@ -12,6 +12,11 @@ import io.jsonwebtoken.SignatureAlgorithm;
 
 public class LockerProcessSingleton {
 
+    public void setLocker(Locker locker) {
+        currentLocker = locker;
+        tokenString = locker.getTokenString();
+    }
+
     private static LockerProcessSingleton single_instance = null;
 
     public Key getKey() {
@@ -39,14 +44,14 @@ public class LockerProcessSingleton {
         processState = value;
     }
 
-    public Locker getLocker() { return reservedLocker; }
+    public Locker getLocker() { return currentLocker; }
 
     private final String keyString = "9qVxRa4e47CRtPf27Zph4ruDyH6wYq8u8eTkTRGYefLJ64mF";
     private Key key;
     private String tokenString;
     private SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.HS256;
     private ProcessState processState;
-    private Locker reservedLocker;
+    private Locker currentLocker;
 
     public PublicKey getServerPublicKey() {
         return serverPublicKey;
@@ -109,29 +114,30 @@ public class LockerProcessSingleton {
         key = new SecretKeySpec(keyString.getBytes(), signatureAlgorithm.getJcaName());
         tokenString = "";
         processState = ProcessState.NONE;
+        /*
         clientPrivateKeyString =
-                "-----BEGIN RSA PRIVATE KEY-----\n" +
-                "MIICXAIBAAKBgQCnaZKTztrOpHVYJ5AtZRgkcK5SLItcNEguCeweCHUjBnF9gvQA\n" +
-                "g6jn5fzucnxRZlMv3Pkl37LSS/CAxlkM9udJtGmtaRVEAf4gvRST6/1hTZqdxS1m\n" +
-                "dzxKjHscwK7ljypl7zoxz3mEsTjEjv5E2uEDUveEuUqSfcC41X6eZJHHCwIDAQAB\n" +
-                "AoGBAJGMdcVP6GgUD3lPHEh7RhwYY1ZKJ/dH9SEhu0j5LW4AIhdvDNiNnwHOsLJW\n" +
-                "ksLqZZSNV4eYDw5Ku5QZ3j4pQzcfxvfjX1WjhcT4if7fYYEdErvs4w1mhUgezGEd\n" +
-                "gBAWFHvMgLmD95qm4xlqOVR034A9XWBzvrlaQAAg9e9B+8CBAkEA/eGutvPDbcdl\n" +
-                "ihDpP7rrVvNhJ49zOft0AZVzD666AGqcxMLHVHp6eW/Di+iMQXJ2aUR5Wrf0kNSZ\n" +
-                "UoaogpGaoQJBAKjPLtKp1Qin86EmhEmurRJSVVHX4ZDdPoJk6bUqMv0DTC9qVRT0\n" +
-                "v405diDuyDKv3TdZNoPJgclCl8r490aoDisCQF1gLApODYrK06W8Io22CeipCwqp\n" +
-                "0A97VGdguDkEYpTUoWQc34NKqNERMjK7DRrlJngBH0Emd2TtTJb1v/SF6QECQBDt\n" +
-                "ldhyR3aywO+sGR/6cEiiEQRADdKlHRueWwFb1fkhV4Z5t0Z+tKbI2Fu9Fj5e/GQM\n" +
-                "gjb9AhLYprgn90QSnjkCQH7dK7eGbFewFvAUbQ4yCXhOd9FygE/QDooxBxSVDXlX\n" +
-                "abZNmeS8qf/eb+isKHuRKNAMZErj/21ey731qfipNmI=\n" +
-                "-----END RSA PRIVATE KEY-----";
+            "-----BEGIN RSA PRIVATE KEY-----\n" +
+            "MIICXQIBAAKBgQDk5/u0rNk+zn/A9f65JxLq+Y/NmeiVS9GroRzmaCL4BkAqoUs7\n" +
+            "k9TT+xPHJcpuNG9V1oyGBvdtOqSuUSvbSa7cbEXw+vdD0WQOQd1fWZMOfOjLYrVR\n" +
+            "xohwXtUoOI9Tlw7yXB1I2R0uln1QImw+c6Y8AdWtDExxMfxPbnhTYmTRhQIDAQAB\n" +
+            "AoGAPWul1V//1uNv0iXvmFzMrbITDPb8OnsiomvTpltQ7r42n3myByVumQao0unn\n" +
+            "/FQjf6PXBut9nph6sa9kFi4aNdcKRMhPAABlBmWF1lNmaqWJh2BAEOCW7D3crh4t\n" +
+            "tyu8F0iixXlrCGAvEKlGOkmtFbL85RQn6xtWK8ztOF+lg40CQQDzX/kHmgeOmpxE\n" +
+            "Bu3phKsPF3yXNNtb12UEwprI0LDJkOTkp0W6C4NEfhtlodP07HCMdN8t0qJmgui+\n" +
+            "aNaqXR3PAkEA8MfdkDpzv+0HGYmyPvEVLl80XG72UAZEvfg7byK7EGk8DkeV59CG\n" +
+            "misZp6d/gN/5fUn5+odi7pG19DDkooPkawJBANQyKJoFJXOjwH3boNILF254Juxb\n" +
+            "bKr9+ZkV6AkRVCLaz4fBhJz67r/oSBDr8TdKc7MzL2fvkCNbHnzuQcSWnacCQDp7\n" +
+            "cRdM+zxMqALN7RtYlxpySVeCJBV/0EaL+nOd7e2ogcu+G2z4uxjLCyorhs6YmBKU\n" +
+            "W0E8jQ0BGz66eW33tw0CQQCgLDkVb3ihPw37YD8GQ89ANXB6G1ed2FdOqtKBoJbF\n" +
+            "B9QFAGtj3rxs4kgpfl70CuEkY7UX7iDrjCSeep5yuzI3\n" +
+            "-----END RSA PRIVATE KEY-----\n";
         clientPublicKeyString =
-                "-----BEGIN PUBLIC KEY-----\n" +
-                "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCnaZKTztrOpHVYJ5AtZRgkcK5S\n" +
-                "LItcNEguCeweCHUjBnF9gvQAg6jn5fzucnxRZlMv3Pkl37LSS/CAxlkM9udJtGmt\n" +
-                "aRVEAf4gvRST6/1hTZqdxS1mdzxKjHscwK7ljypl7zoxz3mEsTjEjv5E2uEDUveE\n" +
-                "uUqSfcC41X6eZJHHCwIDAQAB\n" +
-                "-----END PUBLIC KEY-----";
+            "-----BEGIN PUBLIC KEY-----\n" +
+            "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDk5/u0rNk+zn/A9f65JxLq+Y/N\n" +
+            "meiVS9GroRzmaCL4BkAqoUs7k9TT+xPHJcpuNG9V1oyGBvdtOqSuUSvbSa7cbEXw\n" +
+            "+vdD0WQOQd1fWZMOfOjLYrVRxohwXtUoOI9Tlw7yXB1I2R0uln1QImw+c6Y8AdWt\n" +
+            "DExxMfxPbnhTYmTRhQIDAQAB\n" +
+            "-----END PUBLIC KEY-----\n";
         try {
             clientPrivateKey = RSACipher.stringToPrivate(clientPrivateKeyString);
             clientPublicKey = RSACipher.stringToPublicKey(clientPublicKeyString);
@@ -139,7 +145,7 @@ public class LockerProcessSingleton {
         catch(Exception e) {
 
         }
-
+        */
     }
 
     public static LockerProcessSingleton getInstance() {
@@ -151,12 +157,12 @@ public class LockerProcessSingleton {
     }
 
     public void reserveLocker(String id, String number) {
-        reservedLocker = new Locker(id, number);
+        currentLocker = new Locker(id, number);
     }
 
     public Locker releaseLocker() {
-        Locker temp = reservedLocker;
-        reservedLocker = null;
+        Locker temp = currentLocker;
+        currentLocker = null;
         return temp;
     }
 }

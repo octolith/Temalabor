@@ -18,18 +18,23 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".Activities.LockerDetailsActivity"></activity>
-        <activity android:name=".Activities.LockerListActivity" />
-        <activity android:name=".Activities.CloseActivity" />
-        <activity android:name=".Activities.OpenActivity" />
-        <activity android:name=".Activities.ReleaseActivity" />
-        <activity android:name=".Activities.MainActivity">
+        <activity
+            android:name=".Activities.LockerActivity"
+            android:label="@string/title_activity_locker"
+            android:theme="@style/AppTheme.NoActionBar"></activity>
+        <activity
+            android:name=".Activities.LockersActivity"
+            android:label="@string/title_activity_lockers"
+            android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".Activities.CloseActivity" />
+        <activity android:name=".Activities.OpenActivity" />
+        <activity android:name=".Activities.ReleaseActivity" />
         <activity android:name=".Activities.ReserveActivity">
             <intent-filter>
                 <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE" />

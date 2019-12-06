@@ -1,17 +1,21 @@
 package com.tokenizer.p2p2.Activities;
 
+import android.content.Intent;
+import android.os.Bundle;
+
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
+
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.lifecycle.Observer;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.content.Intent;
-import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
 
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.tokenizer.p2p2.Database.LockerDatabase;
 import com.tokenizer.p2p2.Domain.LockerAdapter;
 import com.tokenizer.p2p2.Domain.LockerProcessSingleton;
@@ -21,24 +25,24 @@ import com.tokenizer.p2p2.R;
 
 import java.util.List;
 
-public class LockerListActivity extends AppCompatActivity implements LockerAdapter.ItemClickListener {
+public class LockersActivity extends AppCompatActivity implements LockerAdapter.ItemClickListener {
 
     private RecyclerView recyclerView;
     private LockerAdapter lockerAdapter;
     private LockerDatabase lockerDatabase;
-    private FloatingActionButton floatingActionButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_locker_list);
+        setContentView(R.layout.activity_lockers);
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
 
-        floatingActionButton = findViewById(R.id.floatingActionButton);
-
-        floatingActionButton.setOnClickListener(new View.OnClickListener() {
+        FloatingActionButton fab = findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivity(new Intent(LockerListActivity.this, ReserveActivity.class));
+                startActivity(new Intent(LockersActivity.this, ReserveActivity.class));
             }
         });
 
@@ -72,7 +76,7 @@ public class LockerListActivity extends AppCompatActivity implements LockerAdapt
                 + lockerAdapter.getItem(position).getNumber()
                 + " on row number " + position, Toast.LENGTH_SHORT).show();
 
-        Intent intent = new Intent(this, LockerDetailsActivity.class);
+        Intent intent = new Intent(this, LockerActivity.class);
         intent.putExtra("locker", lockerAdapter.getItem(position));
         startActivity(intent);
     }
@@ -92,4 +96,5 @@ public class LockerListActivity extends AppCompatActivity implements LockerAdapt
         super.onResume();
         LockerProcessSingleton.getInstance().setProcessState(ProcessState.NONE);
     }
+
 }

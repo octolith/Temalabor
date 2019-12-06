@@ -12,15 +12,23 @@ import com.tokenizer.p2p2.R;
 
 public class OpenActivity extends AppCompatActivity {
 
+    private Locker locker;
+    public Locker getLocker() {
+        return locker;
+    }
+    public void setLocker(Locker locker) {
+        this.locker = locker;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_open);
         Intent i = getIntent();
         if(i.hasExtra("locker")) {
-            Locker locker = (Locker) i.getParcelableExtra("locker");
+            locker = i.getParcelableExtra("locker");
+            LockerProcessSingleton.getInstance().setLocker(locker);
         }
-        LockerProcessSingleton securitySingletonInstance = LockerProcessSingleton.getInstance();
-        securitySingletonInstance.setProcessState(ProcessState.STARTINGOPEN);
+        LockerProcessSingleton.getInstance().setProcessState(ProcessState.STARTINGOPEN);
     }
 }

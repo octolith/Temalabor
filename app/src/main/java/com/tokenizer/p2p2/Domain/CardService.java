@@ -5,8 +5,11 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.google.common.base.Splitter;
+import com.google.common.collect.Lists;
 import com.tokenizer.p2p2.Database.LockerDatabase;
 import com.tokenizer.p2p2.Model.Locker;
+import com.tokenizer.p2p2.Utils.AppExecutors;
 
 import java.util.Arrays;
 
@@ -19,17 +22,11 @@ import java.security.Key;
 import java.util.List;
 
 public class CardService extends HostApduService {
-    private static final String TAG = "CardService";
-    // AID for our loyalty card service.
-    private static final String LOCKER_AID = "F0CDB82BD7BC06";
     // ISO-DEP command HEADER for selecting an AID.
     // Format: [Class | Instruction | Parameter 1 | Parameter 2]
     private static final String SELECT_APDU_HEADER = "00A40400";
     // "OK" status word sent in response to SELECT AID command (0x9000)
     private static final byte[] SELECT_OK_SW = HexStringToByteArray("9000");
-    // "UNKNOWN" status word sent in response to invalid APDU command (0x0000)
-    private static final byte[] UNKNOWN_CMD_SW = HexStringToByteArray("0000");
-    private static final byte[] SELECT_APDU = BuildSelectApdu(LOCKER_AID);
 
     private String fullIncomingData = "";
     private String outgoingDataFull = "";
@@ -38,6 +35,8 @@ public class CardService extends HostApduService {
     private int currentOutgoingDataPart = 0;
 
     private RSACipher rsaCipher;
+
+    private LockerDatabase lockerDatabase;
 
     /**
      * Called if the connection to the NFC card is lost, in order to let the application know the
@@ -72,23 +71,18 @@ public class CardService extends HostApduService {
     @Override
     public byte[] processCommandApdu(byte[] commandApdu, Bundle extras) {
         LockerProcessSingleton lockerProcessInstance = LockerProcessSingleton.getInstance();
+        lockerDatabase = LockerDatabase.getInstance(getApplicationContext());
         Key key = lockerProcessInstance.getKey();
 
-        if (rsaCipher == null) {
-            try {
-                rsaCipher = new RSACipher();
-            }
-            catch(Exception e) {}
-        }
+        rsaCipher = RSACipher.getInstance();
 
         String apduHexString = ByteArrayToHexString(commandApdu);
-        String outgoingData = "";
         byte[] commandSent = null;
 
         String partIncomingData = new String(commandApdu);
 
         // 1. eset: SELECT APDU
-        if(apduHexString.startsWith("00A40400")) {
+        if(apduHexString.startsWith(SELECT_APDU_HEADER)) {
             commandSent = ConcatArrays(SELECT_OK_SW, HexStringToByteArray("00"));
             Log.w("SELECTAPDU", "Select APDU");
         }
@@ -163,7 +157,7 @@ public class CardService extends HostApduService {
                                     incomingPublicKey = incomingJwts.getBody().getIssuer();
                                     Log.w("SERVERPUBLICKEY", incomingPublicKey);
                                     try {
-                                        lockerProcessInstance.setServerPublicKey(RSACipher.stringToPublicKey(incomingPublicKey));
+                                        lockerProcessInstance.setServerPublicKey(rsaCipher.stringToPublicKey(incomingPublicKey));
                                         lockerProcessInstance.setServerPublicKeyString(incomingPublicKey);
                                     }
                                     catch (Exception e) {
@@ -172,7 +166,10 @@ public class CardService extends HostApduService {
                                                 "Public key conversion failure",
                                                 Toast.LENGTH_SHORT).show();
                                     }
-                                    outgoingJwts = Jwts.builder().setSubject("no").setIssuer(lockerProcessInstance.getClientPublicKeyString()).signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                    outgoingJwts = Jwts.builder().setSubject("no")
+                                            .setIssuer(rsaCipher.getPublicKey("pkcs8-pem"))
+                                            .signWith(key, lockerProcessInstance.getSignatureAlgorithm())
+                                            .compact();
                                     Log.w("RESERVECHALLENGE", "NO");
                                     lockerProcessInstance.setProcessState(ProcessState.CHALLENGERESERVE);
                                     break;
@@ -185,7 +182,9 @@ public class CardService extends HostApduService {
                         case CHALLENGERESERVE:
                             switch (incomingSubject) {
                                 case "select":
-                                    outgoingJwts = Jwts.builder().setSubject("reserve").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                    outgoingJwts = Jwts.builder().setSubject("reserve")
+                                            .signWith(key, lockerProcessInstance.getSignatureAlgorithm())
+                                            .compact();
                                     lockerProcessInstance.setProcessState(ProcessState.RESERVING);
                                     Log.w("RESERVINGLOCKER", "Reserving locker");
                                     break;
@@ -200,8 +199,15 @@ public class CardService extends HostApduService {
                             switch (incomingSubject) {
                                 case "success":
                                     incomingId = incomingJwts.getBody().getId();
-                                    Log.w("ENCRYPTEDTOKEN", incomingId);
+                                    Log.w("ENCODEDDTOKEN", incomingId);
                                     String decoded = "";
+
+                                    /*
+                                    String base64encodedenrcyptedtest = rsaCipher.encrypt("asd1234");
+                                    String decodedtest = rsaCipher.decrypt(base64encodedenrcyptedtest);
+                                    Log.e("DECODEDTEST", decodedtest);
+                                    */
+
                                     try {
                                         decoded = rsaCipher.decrypt(incomingId);
                                         Log.w("DECRYPTEDTOKEN", decoded);
@@ -211,11 +217,19 @@ public class CardService extends HostApduService {
                                         Toast.makeText(this.getApplicationContext(),
                                                 "Decode error",
                                                 Toast.LENGTH_SHORT).show();
+                                        Log.e("EXCEPTION", "exception", e);
+                                        throw e;
                                     }
                                     incomingAudience = incomingJwts.getBody().getAudience();
-                                    LockerDatabase.getInstance(this).lockerDao().insertAll(new Locker(decoded, incomingAudience));
+                                    final Locker tempLocker = new Locker(decoded, incomingAudience);
+                                    AppExecutors.getInstance().diskIO().execute(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            lockerDatabase.lockerDao().insertAll(tempLocker);
+                                        }
+                                    });
+
                                     lockerProcessInstance.setProcessState(ProcessState.SAVING);
-                                    //lockerProcessInstance.reserveLocker(decoded, incomingAudience);
                                     String encoded = "";
                                     try {
                                         encoded = rsaCipher.encrypt(decoded, lockerProcessInstance.getServerPublicKey());
@@ -245,6 +259,9 @@ public class CardService extends HostApduService {
                             switch (incomingSubject) {
                                 case "done":
                                     outgoingJwts = Jwts.builder().setSubject("done").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                    Toast.makeText(this.getApplicationContext(),
+                                            "Success! Locker reserved.",
+                                            Toast.LENGTH_SHORT).show();
                                     lockerProcessInstance.setProcessState(ProcessState.DONE);
                                     break;
                                 default:
@@ -268,14 +285,28 @@ public class CardService extends HostApduService {
                         case STARTINGOPEN:
                             switch (incomingSubject) {
                                 case "challenge":
+                                    Toast.makeText(this.getApplicationContext(),
+                                            "CHALLENGE",
+                                            Toast.LENGTH_SHORT).show();
+                                    incomingPublicKey = incomingJwts.getBody().getIssuer();
+                                    Log.w("SERVERPUBLICKEY", incomingPublicKey);
+                                    try {
+                                        lockerProcessInstance.setServerPublicKey(rsaCipher.stringToPublicKey(incomingPublicKey));
+                                        lockerProcessInstance.setServerPublicKeyString(incomingPublicKey);
+                                    }
+                                    catch (Exception e) {
+                                        Log.w("PUBLICKEYCONVERSION", "FAILED");
+                                        Toast.makeText(this.getApplicationContext(),
+                                                "Public key conversion failure",
+                                                Toast.LENGTH_SHORT).show();
+                                    }
                                     outgoingJwts = Jwts.builder()
                                             .setSubject("yes")
+                                            .setIssuer(rsaCipher.getPublicKey("pkcs8-pem"))
                                             .setAudience(lockerProcessInstance.getLocker().getNumber())
                                             .signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
                                     lockerProcessInstance.setProcessState(ProcessState.CHALLENGEOPEN);
-                                    Toast.makeText(this.getApplicationContext(),
-                                            "Opening locker " + lockerProcessInstance.getLocker().getTokenString(),
-                                            Toast.LENGTH_LONG).show();
+                                    Log.w("OPENCHALLENGE", "YES");
                                     break;
                                 default:
                                     outgoingJwts = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
@@ -295,14 +326,19 @@ public class CardService extends HostApduService {
                                         Toast.makeText(this.getApplicationContext(),
                                                 "Decode error",
                                                 Toast.LENGTH_SHORT).show();
+                                        Log.e("OPENDECRYPTERROR", "exception", e);
+                                        throw e;
                                     }
                                     String encoded = "";
                                     try {
                                         encoded = rsaCipher.encrypt(decoded, lockerProcessInstance.getServerPublicKey());
+                                        //encoded = encoded.substring(0, encoded.length() - 1);
                                     } catch (Exception e) {
                                         Toast.makeText(this.getApplicationContext(),
                                                 "Encode error",
                                                 Toast.LENGTH_SHORT).show();
+                                        Log.e("OPENENCRYPTERROR", "exception", e);
+                                        throw e;
                                     }
                                     outgoingJwts = Jwts.builder()
                                             .setSubject("response")
@@ -322,9 +358,21 @@ public class CardService extends HostApduService {
                         case CHALLENGEOPENSUCCESS:
                             switch (incomingSubject) {
                                 case "select":
+                                    String encoded = "";
+                                    try {
+                                        encoded = rsaCipher.encrypt(lockerProcessInstance.getLocker().getTokenString(), lockerProcessInstance.getServerPublicKey());
+                                        //encoded = encoded.substring(0, encoded.length() - 1);
+                                    }
+                                    catch (Exception e) {
+                                        Toast.makeText(this.getApplicationContext(),
+                                                "Encode error",
+                                                Toast.LENGTH_SHORT).show();
+                                        Log.e("OPENENCRYPTERROR", "exception", e);
+                                        throw e;
+                                    }
                                     outgoingJwts = Jwts.builder()
                                             .setSubject("open")
-                                            .setId(lockerProcessInstance.getLocker().getTokenString())
+                                            .setId(encoded)
                                             .setAudience(lockerProcessInstance.getLocker().getNumber())
                                             .signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
                                     lockerProcessInstance.setProcessState(ProcessState.OPENING);
@@ -341,7 +389,8 @@ public class CardService extends HostApduService {
                         case OPENING:
                             switch (incomingSubject) {
                                 case "success":
-                                    outgoingJwts = Jwts.builder().setSubject("acknowledged").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                    outgoingJwts = Jwts.builder().setSubject("acknowledged")
+                                            .signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
                                     lockerProcessInstance.setProcessState(ProcessState.SAVING);
                                     Toast.makeText(this.getApplicationContext(),
                                             "Opened locker",
@@ -355,10 +404,95 @@ public class CardService extends HostApduService {
                             break;
                         case STARTINGCLOSE:
                             switch (incomingSubject) {
+                                case "challenge":
+                                    Toast.makeText(this.getApplicationContext(),
+                                            "CHALLENGE",
+                                            Toast.LENGTH_SHORT).show();
+                                    incomingPublicKey = incomingJwts.getBody().getIssuer();
+                                    Log.w("SERVERPUBLICKEY", incomingPublicKey);
+                                    try {
+                                        lockerProcessInstance.setServerPublicKey(rsaCipher.stringToPublicKey(incomingPublicKey));
+                                        lockerProcessInstance.setServerPublicKeyString(incomingPublicKey);
+                                    }
+                                    catch (Exception e) {
+                                        Log.w("PUBLICKEYCONVERSION", "FAILED");
+                                        Toast.makeText(this.getApplicationContext(),
+                                                "Public key conversion failure",
+                                                Toast.LENGTH_SHORT).show();
+                                    }
+                                    outgoingJwts = Jwts.builder()
+                                            .setSubject("yes")
+                                            .setIssuer(rsaCipher.getPublicKey("pkcs8-pem"))
+                                            .setAudience(lockerProcessInstance.getLocker().getNumber())
+                                            .signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                    lockerProcessInstance.setProcessState(ProcessState.CHALLENGECLOSE);
+                                    Log.w("CLOSECHALLENGE", "YES");
+                                    break;
+                                default:
+                                    outgoingJwts = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                    lockerProcessInstance.setProcessState(ProcessState.NONE);
+                                    break;
+                            }
+                            break;
+                        case CHALLENGECLOSE:
+                            switch (incomingSubject) {
+                                case "decode":
+                                    incomingTest = incomingJwts.getBody().getIssuer();
+
+                                    String decoded = "";
+                                    try {
+                                        decoded = rsaCipher.decrypt(incomingTest);
+                                    } catch (Exception e) {
+                                        Toast.makeText(this.getApplicationContext(),
+                                                "Decode error",
+                                                Toast.LENGTH_SHORT).show();
+                                        Log.e("CLOSEDECRYPTERROR", "exception", e);
+                                        throw e;
+                                    }
+                                    String encoded = "";
+                                    try {
+                                        encoded = rsaCipher.encrypt(decoded, lockerProcessInstance.getServerPublicKey());
+                                        //encoded = encoded.substring(0, encoded.length() - 1);
+                                    } catch (Exception e) {
+                                        Toast.makeText(this.getApplicationContext(),
+                                                "Encode error",
+                                                Toast.LENGTH_SHORT).show();
+                                        Log.e("CLOSEENCRYPTERROR", "exception", e);
+                                        throw e;
+                                    }
+                                    outgoingJwts = Jwts.builder()
+                                            .setSubject("response")
+                                            .setIssuer(encoded)
+                                            .signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                    lockerProcessInstance.setProcessState(ProcessState.CHALLENGECLOSESUCCESS);
+                                    Toast.makeText(this.getApplicationContext(),
+                                            "Crypto response sent",
+                                            Toast.LENGTH_LONG).show();
+                                    break;
+                                default:
+                                    outgoingJwts = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                    lockerProcessInstance.setProcessState(ProcessState.NONE);
+                                    break;
+                            }
+                            break;
+                        case CHALLENGECLOSESUCCESS:
+                            switch (incomingSubject) {
                                 case "select":
+                                    String encoded = "";
+                                    try {
+                                        encoded = rsaCipher.encrypt(lockerProcessInstance.getLocker().getTokenString(), lockerProcessInstance.getServerPublicKey());
+                                        //encoded = encoded.substring(0, encoded.length() - 1);
+                                    }
+                                    catch (Exception e) {
+                                        Toast.makeText(this.getApplicationContext(),
+                                                "Encode error",
+                                                Toast.LENGTH_SHORT).show();
+                                        Log.e("CLOSEENCRYPTERROR", "exception", e);
+                                        throw e;
+                                    }
                                     outgoingJwts = Jwts.builder()
                                             .setSubject("close")
-                                            .setId(lockerProcessInstance.getLocker().getTokenString())
+                                            .setId(encoded)
                                             .setAudience(lockerProcessInstance.getLocker().getNumber())
                                             .signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
                                     lockerProcessInstance.setProcessState(ProcessState.CLOSING);
@@ -375,10 +509,85 @@ public class CardService extends HostApduService {
                         case CLOSING:
                             switch (incomingSubject) {
                                 case "success":
-                                    outgoingJwts = Jwts.builder().setSubject("acknowledged").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                    outgoingJwts = Jwts.builder().setSubject("acknowledged")
+                                            .signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
                                     lockerProcessInstance.setProcessState(ProcessState.SAVING);
                                     Toast.makeText(this.getApplicationContext(),
                                             "Closed locker",
+                                            Toast.LENGTH_LONG).show();
+                                    break;
+                                default:
+                                    outgoingJwts = Jwts.builder().setSubject("failed")
+                                            .signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                    lockerProcessInstance.setProcessState(ProcessState.NONE);
+                                    break;
+                            }
+                            break;
+                        case STARTINGRELEASE:
+                            switch (incomingSubject) {
+                                case "challenge":
+                                    Toast.makeText(this.getApplicationContext(),
+                                            "CHALLENGE",
+                                            Toast.LENGTH_SHORT).show();
+                                    incomingPublicKey = incomingJwts.getBody().getIssuer();
+                                    Log.w("SERVERPUBLICKEY", incomingPublicKey);
+                                    try {
+                                        lockerProcessInstance.setServerPublicKey(rsaCipher.stringToPublicKey(incomingPublicKey));
+                                        lockerProcessInstance.setServerPublicKeyString(incomingPublicKey);
+                                    }
+                                    catch (Exception e) {
+                                        Log.w("PUBLICKEYCONVERSION", "FAILED");
+                                        Toast.makeText(this.getApplicationContext(),
+                                                "Public key conversion failure",
+                                                Toast.LENGTH_SHORT).show();
+                                    }
+                                    outgoingJwts = Jwts.builder()
+                                            .setSubject("yes")
+                                            .setIssuer(rsaCipher.getPublicKey("pkcs8-pem"))
+                                            .setAudience(lockerProcessInstance.getLocker().getNumber())
+                                            .signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                    lockerProcessInstance.setProcessState(ProcessState.CHALLENGERELEASE);
+                                    Log.w("RELEASECHALLENGE", "YES");
+                                    break;
+                                default:
+                                    outgoingJwts = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                    lockerProcessInstance.setProcessState(ProcessState.NONE);
+                                    break;
+                            }
+                            break;
+                        case CHALLENGERELEASE:
+                            switch (incomingSubject) {
+                                case "decode":
+                                    incomingTest = incomingJwts.getBody().getIssuer();
+
+                                    String decoded = "";
+                                    try {
+                                        decoded = rsaCipher.decrypt(incomingTest);
+                                    } catch (Exception e) {
+                                        Toast.makeText(this.getApplicationContext(),
+                                                "Decode error",
+                                                Toast.LENGTH_SHORT).show();
+                                        Log.e("RELEASEDECRYPTERROR", "exception", e);
+                                        throw e;
+                                    }
+                                    String encoded = "";
+                                    try {
+                                        encoded = rsaCipher.encrypt(decoded, lockerProcessInstance.getServerPublicKey());
+                                        //encoded = encoded.substring(0, encoded.length() - 1);
+                                    } catch (Exception e) {
+                                        Toast.makeText(this.getApplicationContext(),
+                                                "Encode error",
+                                                Toast.LENGTH_SHORT).show();
+                                        Log.e("RELEASEENCRYPTERROR", "exception", e);
+                                        throw e;
+                                    }
+                                    outgoingJwts = Jwts.builder()
+                                            .setSubject("response")
+                                            .setIssuer(encoded)
+                                            .signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
+                                    lockerProcessInstance.setProcessState(ProcessState.CHALLENGERELEASESUCCESS);
+                                    Toast.makeText(this.getApplicationContext(),
+                                            "Crypto response sent",
                                             Toast.LENGTH_LONG).show();
                                     break;
                                 default:
@@ -387,15 +596,30 @@ public class CardService extends HostApduService {
                                     break;
                             }
                             break;
-                        case STARTINGRELEASE:
+                        case CHALLENGERELEASESUCCESS:
                             switch (incomingSubject) {
                                 case "select":
+                                    String encoded = "";
+                                    try {
+                                        encoded = rsaCipher.encrypt(lockerProcessInstance.getLocker().getTokenString(), lockerProcessInstance.getServerPublicKey());
+                                        //encoded = encoded.substring(0, encoded.length() - 1);
+                                    }
+                                    catch (Exception e) {
+                                        Toast.makeText(this.getApplicationContext(),
+                                                "Encode error",
+                                                Toast.LENGTH_SHORT).show();
+                                        Log.e("RELEASEENCRYPTERROR", "exception", e);
+                                        throw e;
+                                    }
                                     outgoingJwts = Jwts.builder()
-                                            .setSubject("release")
-                                            .setId(lockerProcessInstance.getLocker().getTokenString())
+                                            .setSubject("close")
+                                            .setId(encoded)
                                             .setAudience(lockerProcessInstance.getLocker().getNumber())
                                             .signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
                                     lockerProcessInstance.setProcessState(ProcessState.RELEASING);
+                                    Toast.makeText(this.getApplicationContext(),
+                                            "Releasing locker " + lockerProcessInstance.getLocker().getTokenString(),
+                                            Toast.LENGTH_LONG).show();
                                     break;
                                 default:
                                     outgoingJwts = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
@@ -407,8 +631,13 @@ public class CardService extends HostApduService {
                             switch (incomingSubject) {
                                 case "success":
                                     outgoingJwts = Jwts.builder().setSubject("acknowledged").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
-                                    LockerDatabase.getInstance(this).lockerDao().delete(LockerProcessSingleton.getInstance().getLocker());
-                                    lockerProcessInstance.releaseLocker();
+                                    AppExecutors.getInstance().diskIO().execute(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            lockerDatabase.lockerDao().delete(LockerProcessSingleton.getInstance().getLocker());
+                                        }
+                                    });
+
                                     lockerProcessInstance.setProcessState(ProcessState.SAVING);
                                     Toast.makeText(this.getApplicationContext(),
                                             "Released locker",
@@ -429,7 +658,7 @@ public class CardService extends HostApduService {
                             break;
                     }
                 }
-                catch (JwtException ex) {     // (4)
+                catch (Exception ex) {     // (4)
                     outgoingJwts = Jwts.builder().setSubject("failed").signWith(key, lockerProcessInstance.getSignatureAlgorithm()).compact();
                     lockerProcessInstance.setProcessState(ProcessState.NONE);
                     Toast.makeText(this.getApplicationContext(),
@@ -440,7 +669,8 @@ public class CardService extends HostApduService {
                 finally {
                     lockerProcessInstance.setTokenString(outgoingJwts);
                     outgoingDataFull = outgoingJwts;
-                    outgoingDataPart = Arrays.asList(outgoingDataFull.split("(?<=\\G.{220})"));
+                    Iterable<String> pieces = Splitter.fixedLength(220).split(outgoingDataFull);
+                    outgoingDataPart = Lists.newArrayList(pieces);
                     totalOutgoingDataParts = outgoingDataPart.size();
                     currentOutgoingDataPart = 1;
                     commandSent = ConcatArrays(Integer.toString(totalOutgoingDataParts).getBytes(), Integer.toString(currentOutgoingDataPart).getBytes());

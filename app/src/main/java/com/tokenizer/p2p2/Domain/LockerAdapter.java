@@ -25,9 +25,9 @@ public class LockerAdapter extends RecyclerView.Adapter<LockerAdapter.LockerView
     public class LockerViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
         // each data item is just a string in this case
         public TextView textView;
-        public LockerViewHolder(TextView v) {
-            super(v);
-            textView = v;
+        public LockerViewHolder(View view) {
+            super(view);
+            textView = view.findViewById(R.id.recyclerview_row_textview);
             itemView.setOnClickListener(this);
         }
 
@@ -52,11 +52,8 @@ public class LockerAdapter extends RecyclerView.Adapter<LockerAdapter.LockerView
     public LockerAdapter.LockerViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
 
         // create a new view
-        TextView v = (TextView) LayoutInflater.from(context)
-                .inflate(R.layout.recyclerview_row, parent, false);
-
-        LockerViewHolder vh = new LockerViewHolder(v);
-        return vh;
+        View view = LayoutInflater.from(context).inflate(R.layout.recyclerview_row, parent, false);
+        return new LockerViewHolder(view);
     }
 
     // Replace the contents of a view (invoked by the layout manager)
