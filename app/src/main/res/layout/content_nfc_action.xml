@@ -8,4 +8,34 @@
     tools:context=".Activities.NfcActionActivity"
     tools:showIn="@layout/activity_nfc_action">
 
+    <TextView
+        android:id="@+id/nfcActivityTextView"
+        style="@style/TextAppearance.AppCompat.Medium"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="96dp"
+        android:layout_marginTop="128dp"
+        android:layout_marginEnd="96dp"
+        android:layout_marginBottom="64dp"
+        android:text="@string/nfcActivityText"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="32dp"
+        android:layout_marginEnd="32dp"
+        android:layout_marginBottom="32dp"
+        app:layout_constraintBottom_toTopOf="@+id/nfcActivityTextView"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="1.0"
+        app:srcCompat="@drawable/ic_nfc_black_48dp"
+        android:contentDescription="@string/nfc_logo"/>
 </androidx.constraintlayout.widget.ConstraintLayout>

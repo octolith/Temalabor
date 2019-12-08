@@ -10,4 +10,7 @@
     <string name="title_activity_lockers">Lockers</string>
     <string name="title_activity_locker">Locker Details</string>
     <string name="title_activity_nfc_action">Nfc Action</string>
+    <string name="nfcActivityText">Hold your device close to the contactless terminal for a few seconds</string>
+    <string name="nfc_logo">NFC Logo</string>
+    <string name="locker">Locker</string>
 </resources>

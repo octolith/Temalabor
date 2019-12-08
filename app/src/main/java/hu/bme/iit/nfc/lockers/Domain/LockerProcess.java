@@ -1,9 +1,10 @@
 package hu.bme.iit.nfc.lockers.Domain;
 
+import android.app.Activity;
+
 import hu.bme.iit.nfc.lockers.Model.Locker;
 
 import java.security.Key;
-import java.security.PrivateKey;
 import java.security.PublicKey;
 
 import javax.crypto.spec.SecretKeySpec;
@@ -12,11 +13,15 @@ import io.jsonwebtoken.SignatureAlgorithm;
 
 public class LockerProcess {
 
+    private static LockerProcess instance = null;
+
     public void setLocker(Locker locker) {
         currentLocker = locker;
     }
 
-    private static LockerProcess single_instance = null;
+    public void setActivity(Activity activity) {
+
+    }
 
     public Key getKey() {
         return key;
@@ -52,73 +57,17 @@ public class LockerProcess {
 
     private PublicKey serverPublicKey;
 
-    public String getServerPublicKeyString() {
-        return serverPublicKeyString;
-    }
-
-    public void setServerPublicKeyString(String serverPublicKeyString) {
-        this.serverPublicKeyString = serverPublicKeyString;
-    }
-
-    private String serverPublicKeyString;
-    private String clientPrivateKeyString;
-
-    public String getClientPrivateKeyString() {
-        return clientPrivateKeyString;
-    }
-
-    public void setClientPrivateKeyString(String clientPrivateKeyString) {
-        this.clientPrivateKeyString = clientPrivateKeyString;
-    }
-
-    public String getClientPublicKeyString() {
-        return clientPublicKeyString;
-    }
-
-    public void setClientPublicKeyString(String clientPublicKeyString) {
-        this.clientPublicKeyString = clientPublicKeyString;
-    }
-
-    public PrivateKey getClientPrivateKey() {
-        return clientPrivateKey;
-    }
-
-    public void setClientPrivateKey(PrivateKey clientPrivateKey) {
-        this.clientPrivateKey = clientPrivateKey;
-    }
-
-    public PublicKey getClientPublicKey() {
-        return clientPublicKey;
-    }
-
-    public void setClientPublicKey(PublicKey clientPublicKey) {
-        this.clientPublicKey = clientPublicKey;
-    }
-
-    private String clientPublicKeyString;
-    private PrivateKey clientPrivateKey;
-    private PublicKey clientPublicKey;
-
     private LockerProcess() {
         key = new SecretKeySpec(keyString.getBytes(), signatureAlgorithm.getJcaName());
         processState = ProcessState.NONE;
     }
 
     public static LockerProcess getInstance() {
-        if (single_instance == null) {
-            single_instance = new LockerProcess();
+        if (instance == null) {
+            instance = new LockerProcess();
         }
 
-        return single_instance;
+        return instance;
     }
 
-    public void reserveLocker(String id, String number) {
-        currentLocker = new Locker(id, number);
-    }
-
-    public Locker releaseLocker() {
-        Locker temp = currentLocker;
-        currentLocker = null;
-        return temp;
-    }
 }

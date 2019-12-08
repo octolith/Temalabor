@@ -41,11 +41,6 @@ public class LockerAdapter extends RecyclerView.Adapter<LockerAdapter.LockerView
         this.context = context;
     }
 
-    // Provide a suitable constructor (depends on the kind of dataset)
-    public LockerAdapter(List<Locker> lockerList) {
-        this.lockerList = lockerList;
-    }
-
     // Create new views (invoked by the layout manager)
     @NonNull
     @Override
@@ -62,7 +57,7 @@ public class LockerAdapter extends RecyclerView.Adapter<LockerAdapter.LockerView
     public void onBindViewHolder(@NonNull LockerAdapter.LockerViewHolder viewHolder, int position) {
         // - get element from your dataset at this position
         // - replace the contents of the view with that element
-        viewHolder.textView.setText(lockerList.get(position).getNumber());
+        viewHolder.textView.setText(R.string.locker + " " + lockerList.get(position).getNumber());
     }
 
     // Return the size of your dataset (invoked by the layout manager)

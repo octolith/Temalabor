@@ -52,7 +52,6 @@ public class LockerDetailsActivity extends AppCompatActivity {
 
     public void onReleaseButtonClick(View view) {
         Intent intent = new Intent(this, NfcActionActivity.class);
-        //intent.putExtra("locker", locker);
         LockerProcess.getInstance().setLocker(locker);
         LockerProcess.getInstance().setProcessState(ProcessState.STARTINGRELEASE);
         startActivity(intent);

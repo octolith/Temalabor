@@ -157,7 +157,6 @@ public class CardService extends HostApduService {
                                     Log.w("SERVERPUBLICKEY", incomingPublicKey);
                                     try {
                                         lockerProcessInstance.setServerPublicKey(rsaCipher.stringToPublicKey(incomingPublicKey));
-                                        lockerProcessInstance.setServerPublicKeyString(incomingPublicKey);
                                     }
                                     catch (Exception e) {
                                         Log.w("PUBLICKEYCONVERSION", "FAILED");
@@ -291,7 +290,6 @@ public class CardService extends HostApduService {
                                     Log.w("SERVERPUBLICKEY", incomingPublicKey);
                                     try {
                                         lockerProcessInstance.setServerPublicKey(rsaCipher.stringToPublicKey(incomingPublicKey));
-                                        lockerProcessInstance.setServerPublicKeyString(incomingPublicKey);
                                     }
                                     catch (Exception e) {
                                         Log.w("PUBLICKEYCONVERSION", "FAILED");
@@ -411,7 +409,6 @@ public class CardService extends HostApduService {
                                     Log.w("SERVERPUBLICKEY", incomingPublicKey);
                                     try {
                                         lockerProcessInstance.setServerPublicKey(rsaCipher.stringToPublicKey(incomingPublicKey));
-                                        lockerProcessInstance.setServerPublicKeyString(incomingPublicKey);
                                     }
                                     catch (Exception e) {
                                         Log.w("PUBLICKEYCONVERSION", "FAILED");
@@ -532,7 +529,6 @@ public class CardService extends HostApduService {
                                     Log.w("SERVERPUBLICKEY", incomingPublicKey);
                                     try {
                                         lockerProcessInstance.setServerPublicKey(rsaCipher.stringToPublicKey(incomingPublicKey));
-                                        lockerProcessInstance.setServerPublicKeyString(incomingPublicKey);
                                     }
                                     catch (Exception e) {
                                         Log.w("PUBLICKEYCONVERSION", "FAILED");
@@ -601,7 +597,6 @@ public class CardService extends HostApduService {
                                     String encoded = "";
                                     try {
                                         encoded = rsaCipher.encrypt(lockerProcessInstance.getLocker().getTokenString(), lockerProcessInstance.getServerPublicKey());
-                                        //encoded = encoded.substring(0, encoded.length() - 1);
                                     }
                                     catch (Exception e) {
                                         Toast.makeText(this.getApplicationContext(),
@@ -680,20 +675,6 @@ public class CardService extends HostApduService {
         }
         Log.w("COMMANDSENT", new String(commandSent));
         return commandSent;
-    }
-    // END_INCLUDE(processCommandApdu)
-
-    /**
-     * Build APDU for SELECT AID command. This command indicates which service a reader is
-     * interested in communicating with. See ISO 7816-4.
-     *
-     * @param aid Application ID (AID) to select
-     * @return APDU for SELECT AID command
-     */
-    public static byte[] BuildSelectApdu(String aid) {
-        // Format: [CLASS | INSTRUCTION | PARAMETER 1 | PARAMETER 2 | LENGTH | DATA]
-        return HexStringToByteArray(SELECT_APDU_HEADER + String.format("%02X",
-                aid.length() / 2) + aid);
     }
 
     /**
