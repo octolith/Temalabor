@@ -13,4 +13,6 @@
     <string name="nfcActivityText">Hold your device close to the contactless terminal for a few seconds</string>
     <string name="nfc_logo">NFC Logo</string>
     <string name="locker">Locker</string>
+    <string name="lockerNumber">Locker number</string>
+    <string name="locker_icon">Locker icon</string>
 </resources>

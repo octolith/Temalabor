@@ -26,15 +26,24 @@
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="hu.bme.iit.nfc.lockers.Activities.LockerDetailsActivity" />
+            <intent-filter>
+                <action android:name="hu.bme.iit.nfc.lockers.nfcactivity.close" />
+            </intent-filter>
         </activity>
         <activity
             android:name=".Activities.LockerDetailsActivity"
             android:label="@string/title_activity_locker"
-            android:theme="@style/AppTheme.NoActionBar" />
+            android:parentActivityName=".Activities.LockersActivity"
+            android:theme="@style/AppTheme.NoActionBar" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="hu.bme.iit.nfc.lockers.Activities.LockersActivity" />
+        </activity>
         <activity
             android:name=".Activities.LockersActivity"
             android:label="@string/title_activity_lockers"
             android:theme="@style/AppTheme.NoActionBar">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

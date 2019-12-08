@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import android.view.View;
+import android.widget.TextView;
 
 import hu.bme.iit.nfc.lockers.Domain.LockerProcess;
 import hu.bme.iit.nfc.lockers.Domain.ProcessState;
@@ -22,18 +23,27 @@ public class LockerDetailsActivity extends AppCompatActivity {
     public void setLocker(Locker locker) {
         this.locker = locker;
     }
+    TextView lockerNumberTextView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_locker_details);
         Toolbar toolbar = findViewById(R.id.toolbar);
+        lockerNumberTextView = findViewById(R.id.lockerNumberTextView);
         setSupportActionBar(toolbar);
-
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         Intent i = getIntent();
         if(i.hasExtra("locker")) {
             locker = i.getParcelableExtra("locker");
+            lockerNumberTextView.setText(locker.getNumber());
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        LockerProcess.getInstance().setProcessState(ProcessState.NONE);
     }
 
     public void onOpenButtonClick(View view) {
