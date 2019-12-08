@@ -20,7 +20,11 @@ public class LockerProcess {
     }
 
     public void setActivity(Activity activity) {
+        this.activity = activity;
+    }
 
+    public Activity getActivity() {
+        return activity;
     }
 
     public Key getKey() {
@@ -46,6 +50,7 @@ public class LockerProcess {
     private SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.HS256;
     private ProcessState processState;
     private Locker currentLocker;
+    private Activity activity;
 
     public PublicKey getServerPublicKey() {
         return serverPublicKey;
