@@ -50,21 +50,28 @@ public class LockerDetailsActivity extends AppCompatActivity {
         Intent intent = new Intent(this, NfcActionActivity.class);
         LockerProcess.getInstance().setLocker(locker);
         LockerProcess.getInstance().setProcessState(ProcessState.STARTINGOPEN);
-        startActivity(intent);
+        startActivityForResult(intent, 0);
     }
 
     public void onCloseButtonClick(View view) {
         Intent intent = new Intent(this, NfcActionActivity.class);
         LockerProcess.getInstance().setLocker(locker);
         LockerProcess.getInstance().setProcessState(ProcessState.STARTINGCLOSE);
-        startActivity(intent);
+        startActivityForResult(intent, 0);
     }
 
     public void onReleaseButtonClick(View view) {
         Intent intent = new Intent(this, NfcActionActivity.class);
         LockerProcess.getInstance().setLocker(locker);
         LockerProcess.getInstance().setProcessState(ProcessState.STARTINGRELEASE);
-        startActivity(intent);
+        startActivityForResult(intent, 0);
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(resultCode==2){
+            finish();
+        }
+    }
 }
