@@ -11,7 +11,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.view.View;
-import android.widget.Toast;
 
 import hu.bme.iit.nfc.lockers.Database.LockerDatabase;
 import hu.bme.iit.nfc.lockers.Domain.LockerAdapter;

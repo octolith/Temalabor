@@ -32,7 +32,6 @@ public class NfcActionActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        LockerProcess.getInstance().setActivity(NfcActionActivity.this);
         localBroadcastManager = LocalBroadcastManager.getInstance(NfcActionActivity.this);
         IntentFilter mIntentFilter = new IntentFilter();
         mIntentFilter.addAction("hu.bme.iit.nfc.lockers.nfcactivity.close");

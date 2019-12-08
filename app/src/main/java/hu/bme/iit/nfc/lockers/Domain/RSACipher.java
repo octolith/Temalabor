@@ -33,10 +33,7 @@ public class RSACipher {
     Cipher cipher, cipher1;
     String encrypted, decrypted;
 
-    String cipherMode1 = "RSA/ECB/OAEPWithSHA1AndMGF1Padding";
-    String cipherMode2 = "RSA/ECB/PKCS1Padding";
-
-    String cipherMode = cipherMode2;
+    String cipherMode = "RSA/ECB/PKCS1Padding";
 
     static RSACipher instance = null;
 
@@ -55,22 +52,13 @@ public class RSACipher {
         return instance;
     }
 
-    private RSACipher()
-            throws NoSuchAlgorithmException,
-            NoSuchPaddingException,
-            InvalidKeyException,
-            IllegalBlockSizeException,
-            BadPaddingException {
+    private RSACipher() throws NoSuchAlgorithmException
+    {
         generateKeyPair();
     }
 
-    private void generateKeyPair()
-            throws NoSuchAlgorithmException,
-            NoSuchPaddingException,
-            InvalidKeyException,
-            IllegalBlockSizeException,
-            BadPaddingException {
-
+    private void generateKeyPair() throws NoSuchAlgorithmException
+    {
         kpg = KeyPairGenerator.getInstance(CRYPTO_METHOD);
         kpg.initialize(CRYPTO_BITS);
         //kp = new KeyPair(lockerProcessInstance.getClientPublicKey(), lockerProcessInstance.getClientPrivateKey());
@@ -137,12 +125,7 @@ public class RSACipher {
     }
 
     public String getPublicKey(String option)
-            throws NoSuchAlgorithmException,
-            NoSuchPaddingException,
-            InvalidKeyException,
-            IllegalBlockSizeException,
-            BadPaddingException {
-
+    {
         switch (option) {
             case "pkcs1-pem":
                 String pkcs1pem = "-----BEGIN RSA PUBLIC KEY-----\n";
@@ -163,12 +146,7 @@ public class RSACipher {
     }
 
     public String getPrivateKey(String option)
-            throws NoSuchAlgorithmException,
-            NoSuchPaddingException,
-            InvalidKeyException,
-            IllegalBlockSizeException,
-            BadPaddingException {
-
+    {
         switch (option) {
             case "pkcs1-pem":
                 String pkcs1pem = "-----BEGIN RSA PRIVATE KEY-----\n";
@@ -189,12 +167,7 @@ public class RSACipher {
     }
 
     public static PublicKey stringToPublicKey(String publicKeyString)
-            throws NoSuchAlgorithmException,
-            NoSuchPaddingException,
-            InvalidKeyException,
-            IllegalBlockSizeException,
-            BadPaddingException {
-
+    {
         try {
             if (publicKeyString.contains("-----BEGIN PUBLIC KEY-----") || publicKeyString.contains("-----END PUBLIC KEY-----"))
                 publicKeyString = publicKeyString.replace("-----BEGIN PUBLIC KEY-----", "").replace("-----END PUBLIC KEY-----", "");
@@ -212,12 +185,7 @@ public class RSACipher {
     }
 
     public static PrivateKey stringToPrivate(String private_key)
-            throws NoSuchAlgorithmException,
-            NoSuchPaddingException,
-            InvalidKeyException,
-            IllegalBlockSizeException,
-            BadPaddingException {
-
+    {
         try {
             // Read in the key into a String
             StringBuilder pkcs8Lines = new StringBuilder();
@@ -242,8 +210,7 @@ public class RSACipher {
 
             PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(pkcs8EncodedBytes);
             KeyFactory kf = KeyFactory.getInstance("RSA");
-            PrivateKey privKey = kf.generatePrivate(keySpec);
-            return privKey;
+            return kf.generatePrivate(keySpec);
 
         } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
             e.printStackTrace();
