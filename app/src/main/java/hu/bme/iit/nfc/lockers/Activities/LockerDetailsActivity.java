@@ -8,10 +8,12 @@ import androidx.appcompat.widget.Toolbar;
 
 import android.view.View;
 
+import hu.bme.iit.nfc.lockers.Domain.LockerProcess;
+import hu.bme.iit.nfc.lockers.Domain.ProcessState;
 import hu.bme.iit.nfc.lockers.Model.Locker;
 import hu.bme.iit.nfc.lockers.R;
 
-public class LockerActivity extends AppCompatActivity {
+public class LockerDetailsActivity extends AppCompatActivity {
 
     private Locker locker;
     public Locker getLocker() {
@@ -24,7 +26,7 @@ public class LockerActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_locker);
+        setContentView(R.layout.activity_locker_details);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -35,20 +37,24 @@ public class LockerActivity extends AppCompatActivity {
     }
 
     public void onOpenButtonClick(View view) {
-        Intent intent = new Intent(this, OpenActivity.class);
-        intent.putExtra("locker", locker);
+        Intent intent = new Intent(this, NfcActionActivity.class);
+        LockerProcess.getInstance().setLocker(locker);
+        LockerProcess.getInstance().setProcessState(ProcessState.STARTINGOPEN);
         startActivity(intent);
     }
 
     public void onCloseButtonClick(View view) {
-        Intent intent = new Intent(this, CloseActivity.class);
-        intent.putExtra("locker", locker);
+        Intent intent = new Intent(this, NfcActionActivity.class);
+        LockerProcess.getInstance().setLocker(locker);
+        LockerProcess.getInstance().setProcessState(ProcessState.STARTINGCLOSE);
         startActivity(intent);
     }
 
     public void onReleaseButtonClick(View view) {
-        Intent intent = new Intent(this, ReleaseActivity.class);
-        intent.putExtra("locker", locker);
+        Intent intent = new Intent(this, NfcActionActivity.class);
+        //intent.putExtra("locker", locker);
+        LockerProcess.getInstance().setLocker(locker);
+        LockerProcess.getInstance().setProcessState(ProcessState.STARTINGRELEASE);
         startActivity(intent);
     }
 

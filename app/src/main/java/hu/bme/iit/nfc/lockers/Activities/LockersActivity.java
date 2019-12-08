@@ -17,7 +17,7 @@ import android.widget.Toast;
 
 import hu.bme.iit.nfc.lockers.Database.LockerDatabase;
 import hu.bme.iit.nfc.lockers.Domain.LockerAdapter;
-import hu.bme.iit.nfc.lockers.Domain.LockerProcessSingleton;
+import hu.bme.iit.nfc.lockers.Domain.LockerProcess;
 import hu.bme.iit.nfc.lockers.Domain.ProcessState;
 import hu.bme.iit.nfc.lockers.Model.Locker;
 import hu.bme.iit.nfc.lockers.R;
@@ -41,7 +41,10 @@ public class LockersActivity extends AppCompatActivity implements LockerAdapter.
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivity(new Intent(LockersActivity.this, ReserveActivity.class));
+                Intent intent = new Intent(LockersActivity.this, NfcActionActivity.class);
+                LockerProcess.getInstance().setLocker(null);
+                LockerProcess.getInstance().setProcessState(ProcessState.STARTINGRESERVE);
+                startActivity(intent);
             }
         });
 
@@ -75,25 +78,21 @@ public class LockersActivity extends AppCompatActivity implements LockerAdapter.
                 + lockerAdapter.getItem(position).getNumber()
                 + " on row number " + position, Toast.LENGTH_SHORT).show();
 
-        Intent intent = new Intent(this, LockerActivity.class);
+        Intent intent = new Intent(this, LockerDetailsActivity.class);
         intent.putExtra("locker", lockerAdapter.getItem(position));
         startActivity(intent);
-    }
-
-    public void onReserveButtonClick(View view) {
-        startActivity(new Intent(this, ReserveActivity.class));
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        LockerProcessSingleton.getInstance().setProcessState(ProcessState.NONE);
+        LockerProcess.getInstance().setProcessState(ProcessState.NONE);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        LockerProcessSingleton.getInstance().setProcessState(ProcessState.NONE);
+        LockerProcess.getInstance().setProcessState(ProcessState.NONE);
     }
 
 }

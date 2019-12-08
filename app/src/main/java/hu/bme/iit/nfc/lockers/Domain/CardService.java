@@ -69,7 +69,7 @@ public class CardService extends HostApduService {
     // BEGIN_INCLUDE(processCommandApdu)
     @Override
     public byte[] processCommandApdu(byte[] commandApdu, Bundle extras) {
-        LockerProcessSingleton lockerProcessInstance = LockerProcessSingleton.getInstance();
+        LockerProcess lockerProcessInstance = LockerProcess.getInstance();
         lockerDatabase = LockerDatabase.getInstance(getApplicationContext());
         Key key = lockerProcessInstance.getKey();
 
@@ -633,7 +633,7 @@ public class CardService extends HostApduService {
                                     AppExecutors.getInstance().diskIO().execute(new Runnable() {
                                         @Override
                                         public void run() {
-                                            lockerDatabase.lockerDao().delete(LockerProcessSingleton.getInstance().getLocker());
+                                            lockerDatabase.lockerDao().delete(LockerProcess.getInstance().getLocker());
                                         }
                                     });
 
@@ -666,7 +666,6 @@ public class CardService extends HostApduService {
                     // we *cannot* use the JWT as intended by its creator
                 }
                 finally {
-                    lockerProcessInstance.setTokenString(outgoingJwts);
                     outgoingDataFull = outgoingJwts;
                     Iterable<String> pieces = Splitter.fixedLength(220).split(outgoingDataFull);
                     outgoingDataPart = Lists.newArrayList(pieces);
