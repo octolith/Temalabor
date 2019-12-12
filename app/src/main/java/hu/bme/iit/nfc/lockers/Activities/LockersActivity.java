@@ -16,9 +16,7 @@ import hu.bme.iit.nfc.lockers.Database.LockerDatabase;
 import hu.bme.iit.nfc.lockers.Domain.LockerAdapter;
 import hu.bme.iit.nfc.lockers.Domain.LockerProcess;
 import hu.bme.iit.nfc.lockers.Domain.ProcessState;
-import hu.bme.iit.nfc.lockers.Model.Locker;
 import hu.bme.iit.nfc.lockers.R;
-import hu.bme.iit.nfc.lockers.Utils.AppExecutors;
 
 public class LockersActivity extends AppCompatActivity implements LockerAdapter.ItemClickListener {
 
@@ -51,11 +49,6 @@ public class LockersActivity extends AppCompatActivity implements LockerAdapter.
         recyclerView.setAdapter(lockerAdapter);
 
         lockerDatabase = LockerDatabase.getInstance(getApplicationContext());
-
-        final Locker tempLocker1 = new Locker("alma", "1");
-        final Locker tempLocker2 = new Locker("körte", "2");
-        final Locker tempLocker3 = new Locker("barack", "3");
-        AppExecutors.getInstance().diskIO().execute(() -> lockerDatabase.lockerDao().insertAll(tempLocker1, tempLocker2, tempLocker3));
 
         retrieveLockers();
     }
