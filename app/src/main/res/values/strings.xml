@@ -15,4 +15,5 @@
     <string name="locker">Locker</string>
     <string name="lockerNumber">Locker number</string>
     <string name="locker_icon">Locker icon</string>
+    <string name="locker_list_item">Locker %1$s</string>
 </resources>

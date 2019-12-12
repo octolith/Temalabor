@@ -57,7 +57,9 @@ public class LockerAdapter extends RecyclerView.Adapter<LockerAdapter.LockerView
     public void onBindViewHolder(@NonNull LockerAdapter.LockerViewHolder viewHolder, int position) {
         // - get element from your dataset at this position
         // - replace the contents of the view with that element
-        viewHolder.textView.setText(R.string.locker + " " + lockerList.get(position).getNumber());
+        viewHolder.textView.setText(
+                context.getResources().getString(
+                        R.string.locker_list_item, lockerList.get(position).getNumber()));
     }
 
     // Return the size of your dataset (invoked by the layout manager)

@@ -1,7 +1,5 @@
 package hu.bme.iit.nfc.lockers.Domain;
 
-import android.app.Activity;
-
 import hu.bme.iit.nfc.lockers.Model.Locker;
 
 import java.security.Key;
